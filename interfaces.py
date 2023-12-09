@@ -30,38 +30,18 @@ class Wire():
     @property #section
     def s(self): return self._s 
 
-class Grid(): #create a grid of points
-    def __init__(self, xlim, ylim, zlim, n=(10,10,10)):
-        assert len(xlim)==2 and len(ylim)==2 and len(zlim)==2, 'xlim, ylim, zlim must be a tuple of 2 elements'
-        x = np.linspace(*xlim, n[0])
-        y = np.linspace(*ylim, n[1])
-        z = np.linspace(*zlim, n[2])
-        self._grid = np.array(np.meshgrid(x,y,z)).T.reshape(-1,3)
-    
-    def __str__(self) -> str:
-        all_samples = self.grid.shape[0]*self.grid.shape[1]*self.grid.shape[2]
-        return f'Grid: {self.grid.shape}, samples={all_samples}'
-    
-    def plot(self, ax:plt.Axes, **kwargs):
-        assert isinstance(ax, plt.Axes), 'ax must be a matplotlib Axes object'
-        ax.scatter(self.grid[:,0], self.grid[:,1], self.grid[:,2], **kwargs)
-        return ax
-    
-    @property #grid
-    def grid(self): return self._grid
-
 class MagField():
     def __init__(self, wires):
         self._wires = wires
         self._B = None
         self._normB = None
 
-    def calc(self, grid:Grid):
+    def calc(self, grid:ndarray):
         raise NotImplementedError
     
-    def quiver(self, ax:plt.Axes, grid:Grid, **kwargs):
+    def quiver(self, ax:plt.Axes, grid:ndarray, **kwargs):
         assert isinstance(ax, plt.Axes), 'ax must be a matplotlib Axes object'
-        assert isinstance(grid, Grid), 'grid must be a Grid object'
+        assert isinstance(grid, ndarray) and grid.shape[1] == 3, 'grid must be a (n,3) array'
         assert self.B is not None, 'magnetic field must be calculated first'
         ax.quiver(grid.grid[:,0], grid.grid[:,1], grid.grid[:,2], self.B[:,0], self.B[:,1], self.B[:,2], **kwargs)
         return ax
@@ -79,7 +59,15 @@ class MagField():
     @property #wires
     def wires(self): return self._wires
 
-def create_example_path(n=100, r=2.0, z=1.0):
+def create_grid(xlim=(-1,1), ylim=(-1,1), zlim=(-1,1), n=(10,10,10)):
+    #create a grid of points
+    x = np.linspace(*xlim, n[0])
+    y = np.linspace(*ylim, n[1])
+    z = np.linspace(*zlim, n[2])
+    grid = np.array(np.meshgrid(x,y,z)).T.reshape(-1,3)
+    return grid
+
+def create_example_path(n=8, r=2.0, z=1.0):
     #create a wire path
     t = np.linspace(0, 2*np.pi, n+1)
     x = r*np.cos(t)
@@ -87,4 +75,6 @@ def create_example_path(n=100, r=2.0, z=1.0):
     z = np.ones_like(x)*z
     wp = np.array([x,y,z]).T
     return wp
+
+
 

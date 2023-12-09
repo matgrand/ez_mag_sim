@@ -1,28 +1,33 @@
-from interfaces import Wire, Grid, MagField, create_example_path
+from interfaces import Wire, MagField, create_example_path, create_grid
 from symbolic import SymWire, SymMagField
 from fem import FemWire, FemMagField
 
 import numpy as np, matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    #create a wire path
-    wp = create_example_path()
-    print(f'wp.shape={wp.shape}')
-    #create a grid
-    grid = Grid((-3,3), (-3,3), (-3,3), n=(15,15,5))
+   
+    grid = create_grid((-3,3), (-3,3), (-3,3), n=(15,15,4)) #create a grid
+    wp1 = create_example_path(n=3, r=2.0, z=0.0) #create a wire path
+    wp2 = create_example_path(n=4, r=2.0, z=1.5) #create a wire path
+    wp3 = create_example_path(n=5, r=2.0, z=-1.5) #create a wire path
 
     ## FEM
-    #create a wire
-    w = FemWire(wp, seg_len=0.1)
-    #create a magnetic field
-    mf = FemMagField([w])
-    #calculate magnetic field
-    mf.calc(grid)
-    #plot magnetic field
+    w1 = FemWire(wp1, V=50, seg_len=0.1) #create a wire
+    w2 = FemWire(wp2, V=40, seg_len=0.1) #create a wire
+    w3 = FemWire(wp3, V=-40, seg_len=0.1) #create a wire
+    wires = [w1, w2, w3]
+    mf = FemMagField(wires) #create a magnetic field
+    mf.calc(grid) #calculate magnetic field
+
+    #plot magnetic field and wire
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    mf.quiver(ax, grid, length=0.8, normalize=True, 
-              color=plt.cm.viridis(mf.normB), arrow_length_ratio=0.0)
+    cmap = np.log(1000*np.clip(mf.normB, 0, 0.01))
+    mf.quiver(ax, grid, length=0.4, normalize=True, 
+              color=plt.cm.viridis(cmap), arrow_length_ratio=0.0)
+    for w in wires: w.plot(ax, color='r') #plot wires
+    ax.scatter(grid[:,0], grid[:,1], grid[:,2], s=1, color='k') #plot grid points
+
     
     # ## SYMBOLIC
     # #create a wire
@@ -37,5 +42,6 @@ if __name__ == '__main__':
     # mf.quiver(ax, grid, length=0.8, normalize=True, 
     #           color=plt.cm.viridis(mf.normB), arrow_length_ratio=0.0)
     
+    plt.tight_layout()
     plt.show()
 

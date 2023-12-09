@@ -1,6 +1,8 @@
-from interfaces import Wire, Grid, MagField
+from interfaces import Wire, MagField
 import numpy as np, matplotlib.pyplot as plt
 from tqdm import tqdm
+from time import time
+from numpy import ndarray
 
 class FemWire(Wire):
     def __init__(self, wp, V=0.0, ρ=1.77e-8, section=1e-4, seg_len=5e-2):
@@ -37,34 +39,35 @@ class FemWire(Wire):
     def seg_len(self): return self._seg_len
     
 class FemMagField(MagField):
-    def __init__(self, wires:[FemWire]):
+    def __init__(self, wires:list):
         super().__init__(wires)
         
-    def calc(self, grid_obj:Grid):
-        grid = grid_obj.grid
+    def calc(self, grid:ndarray):
         # calculate B field on a grid
         assert grid.shape[1] == 3, f'grid must be a (n,3) array, not {grid.shape}'
         self._B = np.zeros_like(grid) #initialize B field
         #calculate B field
-        for wi, w in enumerate(self._wires):
-            μ0 = 4*np.pi*1e-7 #vacuum permeability
-            for i, p in enumerate(tqdm(grid, desc=f'B field {wi+1}/{len(self._wires)}', leave=True, ncols=80)):
-                wp1, wp2 = w.wp, np.roll(w.wp, -1, axis=0)
-                dl = wp2 - wp1  # dl|
-                r = p - (wp1 + wp2) / 2  # r
-                rnorm = np.linalg.norm(r, axis=1).reshape(-1,1)  # |r|
-                r̂ = r / rnorm  # unit vector r
-                self._B[i] += np.sum(
-                    μ0 * w.I * np.cross(dl, r̂) / (4 * np.pi * rnorm ** 2),
-                    axis=0,
-                )  # Biot-Savart law
-            return self._B
+        μ0 = 4*np.pi*1e-7 #vacuum permeability
+        for wi, w in enumerate(self.wires): #for each wire
+            wp1, wp2 = w.wp, np.roll(w.wp, -1, axis=0)  # wire points
+            dl = wp2 - wp1  # dl
+            wm = (wp1 + wp2) / 2  # wire middle
+            for i, p in enumerate(tqdm(grid, desc=f'{wi+1}/{len(self.wires)}')):
+                    r = p - wm 
+                    rnorm = np.linalg.norm(r, axis=1).reshape(-1,1)  # |r|
+                    r̂ = r / rnorm  # unit vector r
+                    self._B[i] += np.sum(
+                        μ0 * w.I * np.cross(dl, r̂) / (4*np.pi*rnorm**2),
+                        axis=0,
+                    )  # Biot-Savart law
+        self._normB = np.linalg.norm(self.B, axis=1)
+        return self._B
         
-    def quiver(self, ax:plt.Axes, grid:Grid, **kwargs):
+    def quiver(self, ax:plt.Axes, grid:ndarray, **kwargs):
         assert isinstance(ax, plt.Axes), 'ax must be a matplotlib Axes object'
-        assert isinstance(grid, Grid), 'grid must be a Grid object'
-        assert self._B is not None, 'B field must be calculated first'
-        self._normB = np.linalg.norm(self._B, axis=1)
-        ax.quiver(grid.grid[:,0], grid.grid[:,1], grid.grid[:,2], 
-                  self._B[:,0], self._B[:,1], self._B[:,2], **kwargs)
+        assert isinstance(grid, ndarray) and grid.shape[1] == 3, 'grid must be a (n,3) array'
+        assert self.B is not None, 'B field must be calculated first'
+        self._normB = np.linalg.norm(self.B, axis=1)
+        ax.quiver(grid[:,0], grid[:,1], grid[:,2], 
+                  self.B[:,0], self.B[:,1], self.B[:,2], **kwargs)
         return ax
