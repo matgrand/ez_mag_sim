@@ -5,8 +5,9 @@ from time import time
 
 #define wire interface
 class Wire():
-    def __init__(self, wire_path:ndarray, V=0.0, ρ=1.77e-8, section=1e-4, seg_len=5e-2):
-        self._wp, self._V, self._ρ, self._s, self._seg_len = wire_path, V, ρ, section, seg_len
+    def __init__(self, wp, V=0.0, ρ=1.77e-8, section=1e-4):
+        self._wp, self._V, self._ρ, self._s = wp, V, ρ, section
+        self._R, self._L, self._I = None, None, None
 
     def plot(self, ax, **kwargs):
         raise NotImplementedError
@@ -28,8 +29,6 @@ class Wire():
     def ρ(self): return self._ρ 
     @property #section
     def s(self): return self._s 
-    @property #segment length
-    def seg_len(self): return self._seg_len
 
 class Grid(): #create a grid of points
     def __init__(self, xlim, ylim, zlim, n=(10,10,10)):
@@ -80,7 +79,7 @@ class MagField():
     @property #wires
     def wires(self): return self._wires
 
-def create_example_path(n=100, r=1.0, z=1.0):
+def create_example_path(n=100, r=2.0, z=1.0):
     #create a wire path
     t = np.linspace(0, 2*np.pi, n+1)
     x = r*np.cos(t)

@@ -7,6 +7,7 @@ import numpy as np, matplotlib.pyplot as plt
 if __name__ == '__main__':
     #create a wire path
     wp = create_example_path()
+    print(f'wp.shape={wp.shape}')
     #create a grid
     grid = Grid((-3,3), (-3,3), (-3,3), n=(15,15,5))
 
