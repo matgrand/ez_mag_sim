@@ -48,20 +48,68 @@ class FemMagField(MagField):
         self._B = np.zeros_like(grid) #initialize B field
         #calculate B field
         μ0 = 4*np.pi*1e-7 #vacuum permeability
-        for wi, w in enumerate(self.wires): #for each wire
-            wp1, wp2 = w.wp, np.roll(w.wp, -1, axis=0)  # wire points
-            dl = wp2 - wp1  # dl
-            wm = (wp1 + wp2) / 2  # wire middle
-            for i, p in enumerate(tqdm(grid, desc=f'{wi+1}/{len(self.wires)}')):
-                    r = p - wm 
-                    rnorm = np.linalg.norm(r, axis=1).reshape(-1,1)  # |r|
-                    r̂ = r / rnorm  # unit vector r
-                    self._B[i] += np.sum(
-                        μ0 * w.I * np.cross(dl, r̂) / (4*np.pi*rnorm**2),
-                        axis=0,
-                    )  # Biot-Savart law
+        for w in self.wires: #for each wire
+            n, m = grid.shape[0], w.wp.shape[0] # n=grid points, m=wire points
+            wp1, wp2 = w.wp, np.roll(w.wp, -1, axis=0)  # wire points (m,3)
+            dl = wp2 - wp1  # dl (m,3)
+            wm = (wp1 + wp2) / 2  # wire middle (m,3)
+            r = np.zeros((n,m,3), dtype=np.float32) # r (n,m,3)
+            #print ram used by r
+            print(f'ram used by r: {r.nbytes/1e6:.2f} MB')
+            ps = np.repeat(grid.reshape(n,1,3), m, axis=1) # grid points (n,1,3) -> (n,m,3)
+            r = ps - wm # r (n,m,3)
+            rnorm = np.linalg.norm(r, axis=-1).reshape(n,m,1) # |r| (n,m,1)
+            r̂ = r / rnorm # unit vector r (n,m,3)
+            #calculate B field with Biot-Savart law
+            self._B += np.sum(μ0*w.I*np.cross(dl,r̂)/(4*np.pi*rnorm**2), axis=1)
+
         self._normB = np.linalg.norm(self.B, axis=1)
         return self._B
+    
+    def calc_slower(self, grid:ndarray):
+        # this is slower than calc, but uses less ram
+        # calculate B field on a grid
+        assert grid.shape[1] == 3, f'grid must be a (n,3) array, not {grid.shape}'
+        self._B = np.zeros_like(grid) #initialize B field
+        #calculate B field, n=grid points, m=wire points
+        μ0 = 4*np.pi*1e-7 #vacuum permeability
+        for wi, w in enumerate(self.wires): #for each wire
+            wp1, wp2 = w.wp, np.roll(w.wp, -1, axis=0)  # wire points (m,3)
+            dl = wp2 - wp1  # dl (m,3)
+            wm = (wp1 + wp2) / 2  # wire middle (m,3)
+            for i, p in enumerate(tqdm(grid, desc=f'{wi+1}/{len(self.wires)}')): # n times
+                r = p - wm  # r (m,3)
+                rnorm = np.linalg.norm(r, axis=1).reshape(-1,1)  # |r| (m,1)
+                r̂ = r / rnorm  # unit vector r (m,3)
+                self._B[i] += np.sum(
+                    μ0 * w.I * np.cross(dl, r̂) / (4*np.pi*rnorm**2),
+                    axis=0,
+                )  # Biot-Savart law
+        self._normB = np.linalg.norm(self.B, axis=1)
+        return self._B
+    
+    def calc_slowest(self, grid:ndarray):
+        # this is extremely slow, but may be useful to understand the algorithm
+        # calculate B field on a grid
+        assert grid.shape[1] == 3, f'grid must be a (n,3) array, not {grid.shape}'
+        self._B = np.zeros_like(grid) #initialize B field
+        #calculate B field
+        μ0 = 4*np.pi*1e-7 #vacuum permeability
+        for wi, w in enumerate(self.wires): #for each wire
+            for i, p in enumerate(tqdm(grid, desc=f'{wi+1}/{len(self.wires)}')):
+                for j in range(len(w.wp)):
+                    wp1, wp2 = w.wp[j], w.wp[(j+1)%len(w.wp)]
+                    dl = wp2 - wp1 #dl
+                    r = p - (wp1+wp2)/2 #r
+                    rnorm = np.linalg.norm(r) #|r|
+                    r̂ = r/rnorm # unit vector r
+                    dlnorm = np.linalg.norm(dl) #|dl|
+                    dl̂ = dl/dlnorm # unit vector dl
+                    self._B[i] += dlnorm*μ0*w.I*np.cross(dl̂, r̂)/(4*np.pi*rnorm**2) #Biot-Savart law
+        self._normB = np.linalg.norm(self.B, axis=1)
+        return self._B
+
+    
         
     def quiver(self, ax:plt.Axes, grid:ndarray, **kwargs):
         assert isinstance(ax, plt.Axes), 'ax must be a matplotlib Axes object'
