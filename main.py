@@ -15,7 +15,7 @@ if __name__ == '__main__':
     w1 = FemWire(wp1, V=50, seg_len=0.1) #create a wire
     w2 = FemWire(wp2, V=40, seg_len=0.1) #create a wire
     w3 = FemWire(wp3, V=-40, seg_len=0.1) #create a wire
-    wires = [w1, w2, w3]
+    wires = [w1, w2, w3] 
     mf = FemMagField(wires) #create a magnetic field
     mf.calc(grid) #calculate magnetic field
 
