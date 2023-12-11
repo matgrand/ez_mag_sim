@@ -4,6 +4,11 @@ from tqdm import tqdm
 from time import time
 from numpy import ndarray
 
+CHUNCK_SIZE = 1e8
+T = np.float32
+
+MAX_PLOT_POINTS = 1000
+
 class FemWire(Wire):
     def __init__(self, wp, V=0.0, ρ=1.77e-8, section=1e-4, seg_len=5e-2):
         super().__init__(wp, V, ρ, section)
@@ -29,8 +34,11 @@ class FemWire(Wire):
         self._I = self._V/self._R # current I = V/R
 
     def plot(self, ax:plt.Axes, **kwargs):
-        for i in range(len(self.wp)):
-            p1, p2 = self.wp[i], self.wp[(i+1)%len(self.wp)]
+        # check if there are too many points to plot
+        if len(self.wp) > MAX_PLOT_POINTS: tmp_wp = self.wp[::len(self.wp)//MAX_PLOT_POINTS]
+        else: tmp_wp = self.wp
+        for i in range(len(tmp_wp)):
+            p1, p2 = tmp_wp[i], tmp_wp[(i+1)%len(tmp_wp)]
             ax.plot([p1[0], p2[0]], [p1[1], p2[1]], [p1[2], p2[2]], **kwargs)
             # ax.scatter(p1[0], p1[1], p1[2], **kwargs)
         return ax
@@ -45,25 +53,36 @@ class FemMagField(MagField):
     def calc(self, grid:ndarray):
         # calculate B field on a grid
         assert grid.shape[1] == 3, f'grid must be a (n,3) array, not {grid.shape}'
-        self._B = np.zeros_like(grid) #initialize B field
+        self._B = np.zeros_like(grid, dtype=T) #initialize B field
         #calculate B field
         μ0 = 4*np.pi*1e-7 #vacuum permeability
-        for w in self.wires: #for each wire
+        for iw, w in enumerate(self.wires): #for each wire 
             n, m = grid.shape[0], w.wp.shape[0] # n=grid points, m=wire points
-            wp1, wp2 = w.wp, np.roll(w.wp, -1, axis=0)  # wire points (m,3)
-            dl = wp2 - wp1  # dl (m,3)
-            wm = (wp1 + wp2) / 2  # wire middle (m,3)
-            r = np.zeros((n,m,3), dtype=np.float32) # r (n,m,3)
-            #print ram used by r
-            print(f'ram used by r: {r.nbytes/1e6:.2f} MB')
-            ps = np.repeat(grid.reshape(n,1,3), m, axis=1) # grid points (n,1,3) -> (n,m,3)
-            r = ps - wm # r (n,m,3)
-            rnorm = np.linalg.norm(r, axis=-1).reshape(n,m,1) # |r| (n,m,1)
-            r̂ = r / rnorm # unit vector r (n,m,3)
-            #calculate B field with Biot-Savart law
-            self._B += np.sum(μ0*w.I*np.cross(dl,r̂)/(4*np.pi*rnorm**2), axis=1)
+            #split grid into chuncks, to limit ram usage
+            n_chuncks = int(np.ceil(n*m/CHUNCK_SIZE))
+            grid_chuncks = np.array_split(grid.astype(T), n_chuncks)
 
-        self._normB = np.linalg.norm(self.B, axis=1)
+            #calculate B field for each chunck
+            B_idx = 0
+            for gc in tqdm(grid_chuncks, desc=f'mf {iw}', ncols=80, leave=False):
+                nc = len(gc) # n=grid points
+                wp1, wp2 = w.wp.astype(T), np.roll(w.wp, -1, axis=0).astype(T)  # wire points (m,3)
+                dl = wp2 - wp1  # dl (m,3)
+                wm = (wp1 + wp2) / 2  # wire middle (m,3)
+                r = np.zeros((nc,m,3), dtype=T) # r (n,m,3)
+                #print ram used by r
+                ps = np.repeat(gc.reshape(nc,1,3), m, axis=1) # grid points (n,1,3) -> (n,m,3)
+                r = ps - wm # r (n,m,3)
+                rnorm = np.linalg.norm(r, axis=-1).reshape(nc,m,1) # |r| (n,m,1)
+                r̂ = r / rnorm # unit vector r (n,m,3)
+                assert wp1.dtype == T and wp2.dtype == T and dl.dtype == T and wm.dtype == T and r.dtype == T and rnorm.dtype == T and r̂.dtype == T, 'dtype error'
+                #calculate B field with Biot-Savart law
+                Bc = np.sum(μ0*w.I*np.cross(dl,r̂)/(4*np.pi*rnorm**2), axis=1)
+                #add B field to total B field
+                self._B[B_idx:B_idx+nc] += Bc
+                B_idx += nc #update B_idx
+
+        self._normB = np.linalg.norm(self.B, axis=-1)
         return self._B
     
     def calc_slower(self, grid:ndarray):
@@ -109,13 +128,12 @@ class FemMagField(MagField):
         self._normB = np.linalg.norm(self.B, axis=1)
         return self._B
 
-    
-        
-    def quiver(self, ax:plt.Axes, grid:ndarray, **kwargs):
+    def quiver(self, ax:plt.Axes, grid:ndarray, dec=1, **kwargs):
         assert isinstance(ax, plt.Axes), 'ax must be a matplotlib Axes object'
         assert isinstance(grid, ndarray) and grid.shape[1] == 3, 'grid must be a (n,3) array'
         assert self.B is not None, 'B field must be calculated first'
         self._normB = np.linalg.norm(self.B, axis=1)
-        ax.quiver(grid[:,0], grid[:,1], grid[:,2], 
-                  self.B[:,0], self.B[:,1], self.B[:,2], **kwargs)
+        x1,y1,z1 = grid[::dec,0], grid[::dec,1], grid[::dec,2]
+        x2,y2,z2 = self.B[::dec,0], self.B[::dec,1], self.B[::dec,2]
+        ax.quiver(x1,y1,z1,x2,y2,z2, **kwargs)
         return ax
