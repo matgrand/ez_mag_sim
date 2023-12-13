@@ -32,7 +32,6 @@ def test_streamplot():
     plt.axis('equal')
     plt.show()
 
-
 def test_magfield_plot():
     #plot magnetic field and wire
     fig = plt.figure(figsize=FIGSIZE)  # big figure just to makeit full screen
@@ -53,43 +52,10 @@ def test_magfield_plot():
     plt.tight_layout()
     plt.show()
 
-
 def test_magfield_animation():
-    pass
-
-GRID_LIM = (-3,3)
-
-if __name__ == '__main__':
-    ix, iy, iz = 50,50,50
-    grid = create_grid(GRID_LIM, GRID_LIM, GRID_LIM, n=(ix,iy,iz)) #create a grid
-    wp1 = create_example_path(n=16, r=2.0, z=0.0) #create a wire path
-    wp2 = create_example_path(n=16, r=2.0, z=1.5) #create a wire path
-    wp3 = create_example_path(n=16, r=2.0, z=-1.5) #create a wire path
-
-    ## FEM
-    w1 = FemWire(wp1, V=50,  seg_len=0.1) #create a wire
-    w2 = FemWire(wp2, V=40,  seg_len=0.1) #create a wire
-    w3 = FemWire(wp3, V=-40, seg_len=0.1) #create a wire
-    wires = [w1, w2, w3] 
-    # wires = [w1] 
-
-    mf = FemMagField(wires) #create a magnetic field
-    calcs = time()
-    mf.calc(grid) #calculate magnetic field
-    calce = time()
-    print(f'calc0: {calce-calcs:.3f} s')
-    print(f'mean of mf norm: {np.mean(mf.normB):.5f} T')
-
-    # TESTS
-
-    # test_magfield_plot()
-
-    # # test_streamplot()
-
-    # test_magfield_animation()
-    NIDXS = 100 #number of idxs to plot
-    STEP_SIZE = 100.0
-    N_ITER = 200 #number of iterations
+    NIDXS = 200 #number of idxs to plot
+    STEP_SIZE = 50.0
+    N_ITER = 300 #number of iterations
     fig = plt.figure(figsize=FIGSIZE)  # big figure just to makeit full screen
     ax = fig.add_subplot(projection='3d')
     ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z')
@@ -120,8 +86,10 @@ if __name__ == '__main__':
         Bi = mf.B[all_idxs[id]]
         ax.clear()
         ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z')
+        # ax.quiver(gridi[:,0], gridi[:,1], gridi[:,2], Bi[:,0], Bi[:,1], Bi[:,2],
+        #                 length=0.4, normalize=True, color=plt.cm.inferno(cmap[all_idxs[id]]), arrow_length_ratio=0.0)
         ax.quiver(gridi[:,0], gridi[:,1], gridi[:,2], Bi[:,0], Bi[:,1], Bi[:,2],
-                        length=0.4, normalize=True, color=plt.cm.inferno(cmap[all_idxs[id]]), arrow_length_ratio=0.0)
+                        length=0.3, normalize=True) #, arrow_length_ratio=0.0)
         for w in wires: w.plot(ax, color='r') #plot wires
         return ax
 
@@ -129,6 +97,42 @@ if __name__ == '__main__':
     # save animation as gif
     # ani.save('anim.gif', writer='imagemagick')
     plt.show()
+
+GRID_LIM = (-3,3)
+
+if __name__ == '__main__':
+    # ix, iy, iz = 20,20,20 #number of points in each dimension
+    # ix, iy, iz = 50,50,50 #number of points in each dimension
+    ix, iy, iz = 37,37,37 #number of points in each dimension
+    # ix, iy, iz = 80,80,80 #number of points in each dimension
+    grid = create_grid(GRID_LIM, GRID_LIM, GRID_LIM, n=(ix,iy,iz)) #create a grid
+    wp1 = create_example_path(n=3, r=2.0, z=-1.0) #create a wire path
+    wp2 = create_example_path(n=4, r=2.0, z=1.5) #create a wire path
+    # wp3 = create_example_path(n=6, r=2.0, z=-1.5) #create a wire path
+    wp3 = np.array([[[2*np.sin(t)],[2.5],[2.5*np.cos(t)]] for t in range(6)]).reshape((-1,3))
+
+    ## FEM
+    w1 = FemWire(wp1, V=50,  seg_len=0.1) #create a wire
+    w2 = FemWire(wp2, V=40,  seg_len=0.1) #create a wire
+    w3 = FemWire(wp3, V=-40, seg_len=0.1) #create a wire
+    wires = [w1, w2, w3] 
+    # wires = [w1] 
+
+    mf = FemMagField(wires) #create a magnetic field
+    calcs = time()
+    mf.calc(grid) #calculate magnetic field
+    calce = time()
+    print(f'calc0: {calce-calcs:.3f} s')
+    print(f'mean of mf norm: {np.mean(mf.normB):.5f} T')
+
+    # TESTS
+
+    test_magfield_plot()
+
+    # # test_streamplot()
+
+    # test_magfield_animation()
+
 
 
 
