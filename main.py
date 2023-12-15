@@ -46,9 +46,9 @@ def test_magfield_plot():
     plt.show()
 
 def test_magfield_animation():
-    NIDXS = 100 #number of idxs to plot
+    NIDXS = 200 #number of idxs to plot
     STEP_SIZE = 0.3 #step size for each iteration
-    N_ITER = 300 #number of iterations
+    N_ITER = 500 #number of iterations
 
     #colors
     import colorsys
@@ -115,15 +115,18 @@ if __name__ == '__main__':
     # ix, iy, iz = 80,80,80 #number of points in each dimension
     grid = create_grid(GRID_LIM, GRID_LIM, GRID_LIM, n=(ix,iy,iz)) #create a grid
     wp1 = create_example_path(n=3, r=2.0, z=-1.0) #create a wire path
-    wp2 = create_example_path(n=4, r=2.0, z=1.5) #create a wire path
+    wp2 = create_example_path(n=5, r=2.0, z=1.5) #create a wire path
     # wp3 = create_example_path(n=6, r=2.0, z=-1.5) #create a wire path
-    wp3 = np.array([[[2*np.sin(t)],[2.5],[2.5*np.cos(t)]] for t in range(6)]).reshape((-1,3))
+    wp3 = np.array([[[2.5*np.sin(t)],[2.5],[2.5*np.cos(t)]] for t in np.linspace(0, 2*np.pi, 5+1)]).reshape((-1,3))
+    wp4 = np.array([[[2.5*np.sin(t)],[-2.5],[2.5*np.cos(t)]] for t in np.linspace(0, 2*np.pi, 7+1)]).reshape((-1,3))
 
     ## FEM
     w1 = FemWire(wp1, V=50,  seg_len=0.1) #create a wire
     w2 = FemWire(wp2, V=40,  seg_len=0.1) #create a wire
     w3 = FemWire(wp3, V=-40, seg_len=0.1) #create a wire
-    wires = [w1, w2, w3] 
+    w4 = FemWire(wp4, V=40, seg_len=0.1) #create a wire
+    # wires = [w1, w2, w3] 
+    wires = [w1, w2, w3, w4]
     # wires = [w1] 
 
     mf = FemMagField(wires) #create a magnetic field
