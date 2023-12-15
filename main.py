@@ -7,10 +7,6 @@ from tqdm import tqdm
 import numpy as np, matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-from matplotlib.quiver import Quiver
-#import Axes3D for 3d plotting
-from mpl_toolkits.mplot3d import Axes3D
-
 FIGSIZE = (12,8)
 
 #set numpy print options
@@ -24,9 +20,6 @@ def test_streamplot():
     # bp3x, bp3y, bp3z = b3[0,:,:,0], b3[0,:,:,1], b3[0,:,:,2]
     gp3x, gp3y, gp3z = g3[:,:,10,0], g3[:,:,10,1], g3[:,:,10,2]
     bp3x, bp3y, bp3z = b3[:,:,10,0], b3[:,:,10,1], b3[:,:,10,2]
-    print(f'gp3x: \n{gp3x}')
-    print(f'gp3y: \n{gp3y}')
-    print(f'gp3z: \n{gp3z}')
     # plt.streamplot(gp3y.T, gp3z.T, bp3y.T, bp3z.T)
     plt.streamplot(gp3x.T, gp3y.T, bp3x.T, bp3y.T, density=2.5)
     plt.axis('equal')
@@ -53,8 +46,8 @@ def test_magfield_plot():
     plt.show()
 
 def test_magfield_animation():
-    NIDXS = 200 #number of idxs to plot
-    STEP_SIZE = 50.0
+    NIDXS = 100 #number of idxs to plot
+    STEP_SIZE = 0.3 #step size for each iteration
     N_ITER = 300 #number of iterations
     fig = plt.figure(figsize=FIGSIZE)  # big figure just to makeit full screen
     ax = fig.add_subplot(projection='3d')
@@ -65,16 +58,19 @@ def test_magfield_animation():
     
     cmap = np.log(1000*np.clip(mf.normB, 0, 0.01))
 
+    #normalized magnetic field B^ = B / |B|
+    Bn = mf.B / mf.normB[:,np.newaxis]
+
+
     curr_idxs = np.random.randint(0, ix*iy*iz, NIDXS)
     all_idxs = np.zeros((N_ITER, NIDXS), dtype=np.int32)
     for i in tqdm(range(N_ITER), desc='animating', ncols=80, leave=False):
         all_idxs[i] = curr_idxs
-        next_pos = grid[curr_idxs] + STEP_SIZE*mf.B[curr_idxs]
+        next_pos = grid[curr_idxs] + STEP_SIZE*Bn[curr_idxs]
         l = len(next_pos)
         next_idxs = np.zeros(l, dtype=np.int32)
         #get element idxs closest to next_pos
-        for j in range(l):
-            next_idxs[j] = np.argmin(np.linalg.norm(grid - next_pos[j], axis=-1))
+        for j in range(l): next_idxs[j] = np.argmin(np.linalg.norm(grid - next_pos[j], axis=-1))
         #remove idxs that are the same as curr_idxs
         next_idxs = next_idxs[next_idxs != curr_idxs]
         curr_idxs[len(next_idxs):] = np.random.randint(0, ix*iy*iz, NIDXS-len(next_idxs))
@@ -127,11 +123,11 @@ if __name__ == '__main__':
 
     # TESTS
 
-    test_magfield_plot()
+    # test_magfield_plot()
 
-    # # test_streamplot()
+    # test_streamplot()
 
-    # test_magfield_animation()
+    test_magfield_animation()
 
 
 
