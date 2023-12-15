@@ -49,6 +49,15 @@ def test_magfield_animation():
     NIDXS = 100 #number of idxs to plot
     STEP_SIZE = 0.3 #step size for each iteration
     N_ITER = 300 #number of iterations
+
+    #colors
+    import colorsys
+    def rainbow_c(idx, n=10): # return a rainbow color
+        c_float = colorsys.hsv_to_rgb(idx/n, 1.0, 1.0)
+        return tuple([int(round(255*x)) for x in c_float])
+    
+    rcol = [rainbow_c(i, NIDXS) for i in range(NIDXS)]
+
     fig = plt.figure(figsize=FIGSIZE)  # big figure just to makeit full screen
     ax = fig.add_subplot(projection='3d')
     ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z')
@@ -72,9 +81,12 @@ def test_magfield_animation():
         #get element idxs closest to next_pos
         for j in range(l): next_idxs[j] = np.argmin(np.linalg.norm(grid - next_pos[j], axis=-1))
         #remove idxs that are the same as curr_idxs
-        next_idxs = next_idxs[next_idxs != curr_idxs]
-        curr_idxs[len(next_idxs):] = np.random.randint(0, ix*iy*iz, NIDXS-len(next_idxs))
-        curr_idxs[:len(next_idxs)] = next_idxs
+        valid_mask = next_idxs != curr_idxs
+        # next_idxs = next_idxs[next_idxs != curr_idxs]
+        # curr_idxs[len(next_idxs):] = np.random.randint(0, ix*iy*iz, NIDXS-len(next_idxs))
+        # curr_idxs[:len(next_idxs)] = next_idxs
+        curr_idxs = next_idxs
+        curr_idxs[~valid_mask] = np.random.randint(0, ix*iy*iz, np.sum(~valid_mask))
 
     def update(id):
         #randomly select elements of grid and quiver them
@@ -85,7 +97,7 @@ def test_magfield_animation():
         # ax.quiver(gridi[:,0], gridi[:,1], gridi[:,2], Bi[:,0], Bi[:,1], Bi[:,2],
         #                 length=0.4, normalize=True, color=plt.cm.inferno(cmap[all_idxs[id]]), arrow_length_ratio=0.0)
         ax.quiver(gridi[:,0], gridi[:,1], gridi[:,2], Bi[:,0], Bi[:,1], Bi[:,2],
-                        length=0.3, normalize=True) #, arrow_length_ratio=0.0)
+                        length=0.3, normalize=True, color=rcol)
         for w in wires: w.plot(ax, color='r') #plot wires
         return ax
 
@@ -94,7 +106,7 @@ def test_magfield_animation():
     # ani.save('anim.gif', writer='imagemagick')
     plt.show()
 
-GRID_LIM = (-3,3)
+GRID_LIM = (-4,4)
 
 if __name__ == '__main__':
     # ix, iy, iz = 20,20,20 #number of points in each dimension
