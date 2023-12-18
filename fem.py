@@ -48,7 +48,7 @@ class FemMagField(MagField):
     def __init__(self, wires:list):
         super().__init__(wires)
         
-    def calc(self, grid:ndarray):
+    def calc(self, grid:ndarray, normalized=False):
         # calculate B field on a grid
         assert grid.shape[1] == 3, f'grid must be a (n,3) array, not {grid.shape}'
         self._B = np.zeros_like(grid, dtype=T) #initialize B field
@@ -62,7 +62,8 @@ class FemMagField(MagField):
 
             #calculate B field for each chunck
             B_idx = 0
-            for gc in tqdm(grid_chuncks, desc=f'mf {iw}', ncols=80, leave=False):
+            iterator = tqdm(grid_chuncks, desc=f'mf {iw}', ncols=80, leave=False) if len(grid_chuncks) > 1 else grid_chuncks
+            for gc in iterator:
                 nc = len(gc) # n=grid points
                 wp1, wp2 = w.wp.astype(T), np.roll(w.wp, -1, axis=0).astype(T)  # wire points (m,3)
                 dl = wp2 - wp1  # dl (m,3)
@@ -81,7 +82,7 @@ class FemMagField(MagField):
                 B_idx += nc #update B_idx
 
         self._normB = np.linalg.norm(self.B, axis=-1)
-        return self._B
+        return self._B if not normalized else self._B / self._normB.reshape(-1,1)
     
     def calc_slower(self, grid:ndarray):
         # this is slower than calc, but uses less ram
