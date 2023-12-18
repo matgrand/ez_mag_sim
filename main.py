@@ -6,8 +6,9 @@ from tqdm import tqdm
 
 import numpy as np, matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
-FIGSIZE = (12,12)
+FIGSIZE = (9,9)
 
 #set numpy print options
 np.set_printoptions(precision=2, suppress=True, linewidth=200)
@@ -36,16 +37,86 @@ def test_magfield_plot():
               color=plt.cm.viridis(cmap), arrow_length_ratio=0.0)
     for w in wires: w.plot(ax, color='r') #plot wires
     # ax.scatter(grid[:,0], grid[:,1], grid[:,2], s=1, color='k') #plot grid points
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel('z')
-    ax.set_xlim(GRID_LIM)
-    ax.set_ylim(GRID_LIM)
-    ax.set_zlim(GRID_LIM)
+    ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z')
+    plt.tight_layout()
+    plt.show()
+
+def test_magfield_plot():
+    #plot magnetic field and wire
+    fig = plt.figure(figsize=FIGSIZE)  # big figure just to makeit full screen
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z')
+    dec = max(1, ix*iy*iz//4999)
+    cmap = np.log(1000*np.clip(mf.normB[::dec], 0, 0.01))
+    #plot magnetic field
+    p1s, p2s = grid[::dec], grid[::dec] + mf.B[::dec]*ARROW_LEN/mf.normB[::dec,np.newaxis]
+    s12 = np.hstack([p1s,p2s]).copy().reshape((-1,2,3)) #create segments
+    lc = Line3DCollection(s12, linewidths=1.0, colors=plt.cm.viridis(cmap))
+    ax.add_collection(lc) #add line collection to plot
+    for w in wires: w.plot(ax, color='r') #plot wires
+    ax.scatter(grid[::dec,0], grid[::dec,1], grid[::dec,2], s=1, color='k') #plot grid points
     plt.tight_layout()
     plt.show()
 
 def test_magfield_animation():
+    NIDXS = 100 #number of idxs to plot
+    STEP_SIZE = 0.25 #step size for each iteration
+    N_ITER = 100 #number of iterations
+
+    #colors
+    import colorsys
+    def rainbow_c(idx, n=10): # return a rainbow color
+        c_float = colorsys.hsv_to_rgb(idx/n, 1.0, 1.0)
+        return tuple([int(round(255*x)) for x in c_float])
+    
+    rcol = [rainbow_c(i, NIDXS) for i in range(NIDXS)]
+
+    fig = plt.figure(figsize=FIGSIZE)  # big figure just to makeit full screen
+    ax = fig.add_subplot(projection='3d')
+    ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z')
+    # ax.quiver(grid[0,0], grid[0,1], grid[0,2], mf.B[0,0], mf.B[0,1], mf.B[0,2],
+    #                     length=ARROW_LEN, normalize=True, color=plt.cm.viridis(0), arrow_length_ratio=0.0)
+    for w in wires: w.plot(ax, color='r') #plot wires
+    
+    cmap = np.log(1000*np.clip(mf.normB, 0, 0.01))
+
+    #normalized magnetic field B^ = B / |B|
+    Bn = mf.B / mf.normB[:,np.newaxis]
+
+
+    curr_idxs = np.random.randint(0, ix*iy*iz, NIDXS)
+    all_idxs = np.zeros((N_ITER, NIDXS), dtype=np.int32)
+    for i in tqdm(range(N_ITER), desc='animating', ncols=80, leave=False):
+        all_idxs[i] = curr_idxs
+        next_pos = grid[curr_idxs] + STEP_SIZE*Bn[curr_idxs]
+        l = len(next_pos)
+        next_idxs = np.zeros(l, dtype=np.int32)
+        #get element idxs closest to next_pos
+        for j in range(l): next_idxs[j] = np.argmin(np.linalg.norm(grid - next_pos[j], axis=-1))
+        #remove idxs that are the same as curr_idxs
+        valid_mask = next_idxs != curr_idxs
+        curr_idxs = next_idxs
+        curr_idxs[~valid_mask] = np.random.randint(0, ix*iy*iz, np.sum(~valid_mask))
+
+    def update(id):
+        #randomly select elements of grid and quiver them
+        gridi = grid[all_idxs[id]]
+        Bi = mf.B[all_idxs[id]]
+        ax.clear()
+        ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z')
+        # ax.quiver(gridi[:,0], gridi[:,1], gridi[:,2], Bi[:,0], Bi[:,1], Bi[:,2],
+        #                 length=ARROW_LEN, normalize=True, color=plt.cm.inferno(cmap[all_idxs[id]]), arrow_length_ratio=0.0)
+        ax.quiver(gridi[:,0], gridi[:,1], gridi[:,2], Bi[:,0], Bi[:,1], Bi[:,2],
+                        length=ARROW_LEN, normalize=True, color=rcol)
+        for w in wires: w.plot(ax, color='r') #plot wires
+        return ax
+
+    ani = animation.FuncAnimation(fig=fig, func=update, frames=N_ITER, interval=30, blit=False, repeat=True)
+    # save animation as gif
+    # ani.save('anim.gif', writer='imagemagick')
+    plt.show()
+
+def test_magfield_animation2():
     NIDXS = 100 #number of idxs to plot
     STEP_SIZE = 0.25 #step size for each iteration
     N_ITER = 100 #number of iterations
@@ -103,13 +174,15 @@ def test_magfield_animation():
     # ani.save('anim.gif', writer='imagemagick')
     plt.show()
 
+
 GRID_LIM = (-4,4)
-ARROW_LEN = 0.3
+ARROW_LEN = 0.4
 
 if __name__ == '__main__':
-    # ix, iy, iz = 20,20,20 #number of points in each dimension
+    # ix, iy, iz = 10,10,10 #number of points in each dimension
+    ix, iy, iz = 20,20,20 #number of points in each dimension
+    # ix, iy, iz = 37,37,37 #number of points in each dimension
     # ix, iy, iz = 50,50,50 #number of points in each dimension
-    ix, iy, iz = 37,37,37 #number of points in each dimension
     # ix, iy, iz = 80,80,80 #number of points in each dimension
     grid = create_grid(GRID_LIM, GRID_LIM, GRID_LIM, n=(ix,iy,iz)) #create a grid
     wp1 = create_example_path(n=3, r=2.0, z=-1.0) #create a wire path
@@ -136,11 +209,13 @@ if __name__ == '__main__':
 
     # TESTS
 
-    # test_magfield_plot()
+    test_magfield_plot()
 
     # test_streamplot()
 
-    test_magfield_animation()
+    # test_magfield_animation()
+
+    # test_magfield_animation2()
 
 
 
