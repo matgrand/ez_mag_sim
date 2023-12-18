@@ -14,6 +14,7 @@ class FemWire(Wire):
         super().__init__(wp, V, ρ, section)
         self._seg_len = seg_len
         assert self._wp.shape[1] == 3, f'wire_path must be a (n,3) array, not {self.wp.shape}'
+        self._in_wp = self._wp.copy() #initial wire path (before resampling)
 
         #calculate legnth of wire
         diff = self.wp - np.roll(self.wp, 1, axis=0) #difference between points
@@ -35,12 +36,9 @@ class FemWire(Wire):
 
     def plot(self, ax:plt.Axes, **kwargs):
         # check if there are too many points to plot
-        if len(self.wp) > MAX_PLOT_POINTS: tmp_wp = self.wp[::len(self.wp)//MAX_PLOT_POINTS]
-        else: tmp_wp = self.wp
-        for i in range(len(tmp_wp)):
-            p1, p2 = tmp_wp[i], tmp_wp[(i+1)%len(tmp_wp)]
-            ax.plot([p1[0], p2[0]], [p1[1], p2[1]], [p1[2], p2[2]], **kwargs)
-            # ax.scatter(p1[0], p1[1], p1[2], **kwargs)
+        if len(self._in_wp) > MAX_PLOT_POINTS: tmp_wp = self.wp[::len(self.wp)//MAX_PLOT_POINTS]
+        else: tmp_wp = self._in_wp
+        ax.plot(tmp_wp[:,0], tmp_wp[:,1], tmp_wp[:,2], **kwargs)
         return ax
 
     @property #segment length

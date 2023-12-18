@@ -7,7 +7,7 @@ from tqdm import tqdm
 import numpy as np, matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-FIGSIZE = (12,8)
+FIGSIZE = (12,12)
 
 #set numpy print options
 np.set_printoptions(precision=2, suppress=True, linewidth=200)
@@ -46,9 +46,9 @@ def test_magfield_plot():
     plt.show()
 
 def test_magfield_animation():
-    NIDXS = 200 #number of idxs to plot
-    STEP_SIZE = 0.3 #step size for each iteration
-    N_ITER = 500 #number of iterations
+    NIDXS = 100 #number of idxs to plot
+    STEP_SIZE = 0.25 #step size for each iteration
+    N_ITER = 100 #number of iterations
 
     #colors
     import colorsys
@@ -62,7 +62,7 @@ def test_magfield_animation():
     ax = fig.add_subplot(projection='3d')
     ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z')
     ax.quiver(grid[0,0], grid[0,1], grid[0,2], mf.B[0,0], mf.B[0,1], mf.B[0,2],
-                        length=0.4, normalize=True, color=plt.cm.viridis(0), arrow_length_ratio=0.0)
+                        length=ARROW_LEN, normalize=True, color=plt.cm.viridis(0), arrow_length_ratio=0.0)
     for w in wires: w.plot(ax, color='r') #plot wires
     
     cmap = np.log(1000*np.clip(mf.normB, 0, 0.01))
@@ -82,9 +82,6 @@ def test_magfield_animation():
         for j in range(l): next_idxs[j] = np.argmin(np.linalg.norm(grid - next_pos[j], axis=-1))
         #remove idxs that are the same as curr_idxs
         valid_mask = next_idxs != curr_idxs
-        # next_idxs = next_idxs[next_idxs != curr_idxs]
-        # curr_idxs[len(next_idxs):] = np.random.randint(0, ix*iy*iz, NIDXS-len(next_idxs))
-        # curr_idxs[:len(next_idxs)] = next_idxs
         curr_idxs = next_idxs
         curr_idxs[~valid_mask] = np.random.randint(0, ix*iy*iz, np.sum(~valid_mask))
 
@@ -95,18 +92,19 @@ def test_magfield_animation():
         ax.clear()
         ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z')
         # ax.quiver(gridi[:,0], gridi[:,1], gridi[:,2], Bi[:,0], Bi[:,1], Bi[:,2],
-        #                 length=0.4, normalize=True, color=plt.cm.inferno(cmap[all_idxs[id]]), arrow_length_ratio=0.0)
+        #                 length=ARROW_LEN, normalize=True, color=plt.cm.inferno(cmap[all_idxs[id]]), arrow_length_ratio=0.0)
         ax.quiver(gridi[:,0], gridi[:,1], gridi[:,2], Bi[:,0], Bi[:,1], Bi[:,2],
-                        length=0.3, normalize=True, color=rcol)
+                        length=ARROW_LEN, normalize=True, color=rcol)
         for w in wires: w.plot(ax, color='r') #plot wires
         return ax
 
-    ani = animation.FuncAnimation(fig=fig, func=update, frames=N_ITER, interval=100, blit=False, repeat=True)
+    ani = animation.FuncAnimation(fig=fig, func=update, frames=N_ITER, interval=30, blit=False, repeat=True)
     # save animation as gif
     # ani.save('anim.gif', writer='imagemagick')
     plt.show()
 
 GRID_LIM = (-4,4)
+ARROW_LEN = 0.3
 
 if __name__ == '__main__':
     # ix, iy, iz = 20,20,20 #number of points in each dimension
@@ -117,8 +115,8 @@ if __name__ == '__main__':
     wp1 = create_example_path(n=3, r=2.0, z=-1.0) #create a wire path
     wp2 = create_example_path(n=5, r=2.0, z=1.5) #create a wire path
     # wp3 = create_example_path(n=6, r=2.0, z=-1.5) #create a wire path
-    wp3 = np.array([[[2.5*np.sin(t)],[2.5],[2.5*np.cos(t)]] for t in np.linspace(0, 2*np.pi, 5+1)]).reshape((-1,3))
-    wp4 = np.array([[[2.5*np.sin(t)],[-2.5],[2.5*np.cos(t)]] for t in np.linspace(0, 2*np.pi, 7+1)]).reshape((-1,3))
+    wp3 = np.array([[[2.5*np.sin(t)],[2.5],[2.5*np.cos(t)]] for t in np.linspace(0,2*np.pi,5+1)]).reshape((-1,3))
+    wp4 = np.array([[[2.5*np.sin(t)],[-2.5],[2.5*np.cos(t)]] for t in np.linspace(0,2*np.pi,7+1)]).reshape((-1,3))
 
     ## FEM
     w1 = FemWire(wp1, V=50,  seg_len=0.1) #create a wire
