@@ -53,7 +53,7 @@ def test_magfield_plot():
 
 def test_magfield_animation():
     NIDXS = 3000 #number of idxs to plot
-    STEP_SIZE = 0.12 #step size for each iteration
+    STEP_SIZE = 0.08 #step size for each iteration
     N_ITER = 1500 #number of iterations
     FPS = 30.0 #frames per second
     SKIP_FRAMES = 1 #skip frames to reduce animation size
