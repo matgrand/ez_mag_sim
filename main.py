@@ -1,5 +1,5 @@
 from fem import FemWire, FemMagField
-from utils import create_grid, create_example_path
+from utils import create_grid, create_horiz_circular_path
 from time import time
 from tqdm import tqdm
 
@@ -70,9 +70,9 @@ if __name__ == '__main__':
     # ix, iy, iz = 50,50,50 #number of points in each dimension
     # ix, iy, iz = 80,80,80 #number of points in each dimension
     grid = create_grid(GRID_LIM, GRID_LIM, GRID_LIM, n=(ix,iy,iz)) #create a grid
-    wp1 = create_example_path(n=3, r=2.0, z=-1.0) #create a wire path
-    wp2 = create_example_path(n=5, r=2.0, z=1.5) #create a wire path
-    # wp3 = create_example_path(n=6, r=2.0, z=-1.5) #create a wire path
+    wp1 = create_horiz_circular_path(n=3, r=2.0, z=-1.0) #create a wire path
+    wp2 = create_horiz_circular_path(n=5, r=2.0, z=1.5) #create a wire path
+    # wp3 = create_horiz_circular_path(n=6, r=2.0, z=-1.5) #create a wire path
     wp3 = np.array([[[1.3*np.sin(t)],[3],[1.3*np.cos(t)]] for t in np.linspace(0,2*np.pi,5+1)]).reshape((-1,3))
     wp4 = np.array([[[3],[1.5*np.sin(t)],[1.5*np.cos(t)]] for t in np.linspace(0,2*np.pi,7+1)]).reshape((-1,3))
 
