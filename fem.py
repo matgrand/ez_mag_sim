@@ -37,10 +37,7 @@ class FemWire():
         return f'Wire: V={self.V:.2f} V, ρ={self.ρ:.2e} Ωm, s={self.s:.2e} m^2, L={self.L:.2f} m, R={self.R:.2e} Ω, I={self.I:.2e} A'
 
     def plot(self, ax:plt.Axes, **kwargs):
-        # check if there are too many points to plot
-        if len(self._in_wp) > MAX_PLOT_POINTS: tmp_wp = self.wp[::len(self.wp)//MAX_PLOT_POINTS]
-        else: tmp_wp = self._in_wp
-        ax.plot(tmp_wp[:,0], tmp_wp[:,1], tmp_wp[:,2], **kwargs)
+        ax.plot(self._in_wp[:,0], self._in_wp[:,1], self._in_wp[:,2], **kwargs)
         return ax
 
     @property #current
@@ -144,16 +141,6 @@ class FemMagField():
                     self._B[i] += dlnorm*μ0*w.I*np.cross(dl̂, r̂)/(4*np.pi*rnorm**2) #Biot-Savart law
         self._normB = np.linalg.norm(self.B, axis=1)
         return self._B
-
-    def quiver(self, ax:plt.Axes, grid:ndarray, dec=1, **kwargs):
-        assert isinstance(ax, plt.Axes), 'ax must be a matplotlib Axes object'
-        assert isinstance(grid, ndarray) and grid.shape[1] == 3, 'grid must be a (n,3) array'
-        assert self.B is not None, 'B field must be calculated first'
-        self._normB = np.linalg.norm(self.B, axis=1)
-        x1,y1,z1 = grid[::dec,0], grid[::dec,1], grid[::dec,2]
-        x2,y2,z2 = self.B[::dec,0], self.B[::dec,1], self.B[::dec,2]
-        ax.quiver(x1,y1,z1,x2,y2,z2, **kwargs)
-        return ax
     
     @property #magnetic field
     def B(self): return self._B

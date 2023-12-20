@@ -14,43 +14,6 @@ ARROW_LEN = 0.3
 #set numpy print options
 np.set_printoptions(precision=2, suppress=True, linewidth=200)
 
-def test_streamplot():
-    #streamplot magnetic field
-    fig = plt.figure(figsize=FIGSIZE)  # big figure just to makeit full screen
-    g3, b3 = grid.reshape((ix,iy,iz,3)), mf.B.reshape((ix,iy,iz,3))
-    # gp3x, gp3y, gp3z = g3[0,:,:,0], g3[0,:,:,1], g3[0,:,:,2]
-    # bp3x, bp3y, bp3z = b3[0,:,:,0], b3[0,:,:,1], b3[0,:,:,2]
-    gp3x, gp3y, gp3z = g3[:,:,10,0], g3[:,:,10,1], g3[:,:,10,2]
-    bp3x, bp3y, bp3z = b3[:,:,10,0], b3[:,:,10,1], b3[:,:,10,2]
-    # plt.streamplot(gp3y.T, gp3z.T, bp3y.T, bp3z.T)
-    plt.streamplot(gp3x.T, gp3y.T, bp3x.T, bp3y.T, density=2.5)
-    plt.axis('equal')
-    plt.show()
-
-def update_ax(ax:plt.Axes, points:np.ndarray, vecs:np.ndarray, linewidths=1.0, colors='k'):
-    assert points.shape == vecs.shape, f'points and vecs must have the same shape, not {points.shape} and {vecs.shape}'
-    assert points.shape[1] == 3, f'must be a (n,3) array, not {points.shape}'
-    assert points.ndim == 2, f'must be a (n,3) array, not {points.shape}'
-    p1s, p2s = points, points + vecs*ARROW_LEN
-    s12 = np.hstack([p1s,p2s]).copy().reshape((-1,2,3)) #create segments
-    lc = Line3DCollection(s12, linewidths=linewidths, colors=colors)
-    ax.add_collection(lc) #add line collection to plot
-    return ax
-
-def test_magfield_plot():
-    #plot magnetic field and wire
-    fig = plt.figure(figsize=FIGSIZE)  # big figure just to makeit full screen
-    ax = fig.add_subplot(111, projection='3d')
-    ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z')
-    dec = max(1, ix*iy*iz//4999)
-    cmap = np.log(1000*np.clip(mf.normB[::dec], 0, 0.01))
-    #plot magnetic field
-    ax = update_ax(ax, grid[::dec], mf.B[::dec]/mf.normB[::dec,np.newaxis], linewidths=0.8, colors=plt.cm.inferno(cmap))
-    for w in wires: w.plot(ax, color='r') #plot wires
-    ax.scatter(grid[::dec,0], grid[::dec,1], grid[::dec,2], s=1, color='k') #plot grid points
-    plt.tight_layout()
-    plt.show()
-
 def test_magfield_animation():
     NIDXS = 3000 #number of idxs to plot
     STEP_SIZE = 0.12 #step size for each iteration
