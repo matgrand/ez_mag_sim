@@ -2,8 +2,9 @@ from fem import FemWire, FemMagField
 from utils import create_grid, create_horiz_circular_path
 from time import time
 from tqdm import tqdm
-
-import numpy as np, matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
+import numpy as np, matplotlib.pyplot as plt, os, shutil
 import matplotlib.animation as animation
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
@@ -52,7 +53,7 @@ def test_magfield_plot():
     plt.show()
 
 def test_magfield_animation():
-    NIDXS = 5000 #number of idxs to plot
+    NIDXS = 15000 #number of idxs to plot
     STEP_SIZE = 0.08 #step size for each iteration
     N_ITER = 3000 #number of iterations
     FPS = 30.0 #frames per second
@@ -69,8 +70,6 @@ def test_magfield_animation():
     fig = plt.figure(figsize=FIGSIZE)  # big figure just to makeit full screen
     ax = fig.add_subplot(projection='3d')
     ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z', aspect='equal')
-    plt.tight_layout()
-
     for w in wires: w.plot(ax, color='r') #plot wires
 
     curr_poss = np.random.uniform(GRID_LIM[0], GRID_LIM[1], (NIDXS,3)) #random positions
@@ -89,16 +88,34 @@ def test_magfield_animation():
         ii = (id*SKIP_FRAMES) % N_ITER # trick to skip frames and get a faster animation
         ax.clear() # clear axis, comment to leave trails
         ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z', aspect='equal', title=f'iteration {id}/{N_ITER}')
-        plt.tight_layout()
         update_ax(ax, all_poss[ii], all_mfs[ii], linewidths=0.8, colors=rcol)
         for w in wires: w.plot(ax, color='r') #plot wires
         ax.view_init(elev=30, azim=2*360*id/N_ITER) #rotate view, comment to be able to rotate view yourself
-        return ax
+        plt.tight_layout()
+        #save image
+        plt.savefig(f'anim/{id:06d}.png', dpi=300)
 
-    ani = animation.FuncAnimation(fig=fig, func=update, frames=N_ITER, interval=1000/FPS, blit=False, repeat=True)
-    # ani.save('anim.mp4', writer='ffmpeg', fps=FPS, bitrate=1800) #save animation as an mp4. requires ffmpeg
-    ani.save('anim.gif', writer='imagemagick', progress_callback=lambda i,N_ITER:print(f'animating {i/N_ITER*100:.1f}%', end='\r'), fps=FPS) #save gif
-    plt.show()
+    
+
+    # # matplotlib animation
+    # ani = animation.FuncAnimation(fig=fig, func=update, frames=N_ITER, interval=1000/FPS, blit=False, repeat=True)
+    # # ani.save('anim.mp4', writer='ffmpeg', fps=FPS, bitrate=1800) #save animation as an mp4. requires ffmpeg
+    # ani.save('anim.gif', progress_callback=lambda i,N_ITER:print(f'animating {i/N_ITER*100:.1f}%', end='\r'), fps=FPS) #save gif
+    
+    # create images
+    if os.path.exists('anim'): shutil.rmtree('anim'), os.mkdir('anim') #remove old images
+    for i in tqdm(range(N_ITER), desc='anim', ncols=80, leave=False): update(i) #create images
+
+    # # imageio animation
+    # import imageio
+    # images = []
+    # for i in tqdm(range(N_ITER), desc='anim', ncols=80, leave=False):
+    #     images.append(imageio.imread(f'anim/{i:04d}.png'))
+    # imageio.mimsave('anim.gif', images, fps=FPS) #save gif
+
+    # create mp4 using ffmpeg
+    os.system(f'ffmpeg -y -r {FPS} -i anim/%06d.png -c:v libx264 -vf fps={FPS} -pix_fmt yuv420p anim.mp4')
+
 
 if __name__ == '__main__':
     # ix, iy, iz = 10,10,10 #number of points in each dimension
