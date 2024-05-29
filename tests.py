@@ -98,7 +98,7 @@ def test_magfield_animation():
         plt.tight_layout()
         print(f'iteration {id}/{N_ITER}         ', end='\r')
         #save image
-        if SAVE_MP4: plt.savefig(f'anim/{id:06d}.png', dpi=100) #dpi=300
+        if SAVE_MP4: plt.savefig(f'anim/{id:06d}.png', dpi=200) #dpi=300
 
     if SAVE_MP4: # create images
         if os.path.exists('anim'): shutil.rmtree('anim')#remove old images
