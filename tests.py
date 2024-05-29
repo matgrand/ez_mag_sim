@@ -16,9 +16,10 @@ NPART = 4000 #number of particles to plot, reduce for a faster animation
 STEP_SIZE = 0.08 #step size for each iteration
 N_ITER = 3000 #number of iterations to animate 3000
 FPS = 30.0 #frames per second
+ANIM_SPEED = 2.5 #speed of animation (can also be used to speed up slow animations)
 SKIP_FRAMES = 1 #skip frames to reduce animation size
 SAVE_MP4 = False  # use saved pics to create mp4 video, for big animations
-AUTO_ROTATE_VIEW = SAVE_MP4 or True # rotate view in 3d plot automatically
+AUTO_ROTATE_VIEW = SAVE_MP4 or False # rotate view in 3d plot automatically
 
 #set numpy print options
 np.set_printoptions(precision=2, suppress=True, linewidth=200)
@@ -108,7 +109,7 @@ def test_magfield_animation():
     else:
         # # matplotlib animation
         print('creating animation... this may take a while...')
-        ani = animation.FuncAnimation(fig=fig, func=update, frames=N_ITER, interval=1000/FPS, blit=False, repeat=True)
+        ani = animation.FuncAnimation(fig=fig, func=update, frames=N_ITER, interval=1000/FPS/ANIM_SPEED, blit=False, repeat=True)
     return None if SAVE_MP4 else ani
 
 
@@ -116,7 +117,7 @@ if __name__ == '__main__':
     # ix, iy, iz = 10,10,10 #number of points in each dimension
     # ix, iy, iz = 20,20,20 #number of points in each dimension
     # ix, iy, iz = 37,37,37 #number of points in each dimension
-    ix, iy, iz = 50,50,50 #number of points in each dimension
+    ix, iy, iz = 53,53,53 #number of points in each dimension
     # ix, iy, iz = 80,80,80 #number of points in each dimension
     grid = create_grid(GRID_LIM, GRID_LIM, GRID_LIM, n=(ix,iy,iz)) #create a grid
     wp1 = create_horiz_circular_path(n=3, r=2.0, z=-1.0) #create a wire path
