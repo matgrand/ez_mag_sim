@@ -26,7 +26,7 @@ def test_streamplot():
     # plt.streamplot(gp3y.T, gp3z.T, bp3y.T, bp3z.T)
     plt.streamplot(gp3x.T, gp3y.T, bp3x.T, bp3y.T, density=2.5)
     plt.axis('equal')
-    plt.show()
+    return fig
 
 def update_ax(ax:plt.Axes, points:np.ndarray, vecs:np.ndarray, linewidths=1.0, colors='k'):
     assert points.shape == vecs.shape, f'points and vecs must have the same shape, not {points.shape} and {vecs.shape}'
@@ -50,12 +50,12 @@ def test_magfield_plot():
     for w in wires: w.plot(ax, color='r') #plot wires
     ax.scatter(grid[::dec,0], grid[::dec,1], grid[::dec,2], s=1, color='k') #plot grid points
     plt.tight_layout()
-    plt.show()
+    return fig
 
 def test_magfield_animation():
-    NIDXS = 15000 #number of idxs to plot
+    NIDXS = 300 #number of idxs to plot 3000
     STEP_SIZE = 0.08 #step size for each iteration
-    N_ITER = 3000 #number of iterations
+    N_ITER = 300 #number of iterations to animate 3000
     FPS = 30.0 #frames per second
     SKIP_FRAMES = 1 #skip frames to reduce animation size
 
@@ -116,11 +116,16 @@ def test_magfield_animation():
     # create mp4 using ffmpeg
     os.system(f'ffmpeg -y -r {FPS} -i anim/%06d.png -c:v libx264 -vf fps={FPS} -pix_fmt yuv420p anim.mp4')
 
+    #remove images
+    shutil.rmtree('anim')
+
+    return fig
+
 
 if __name__ == '__main__':
     # ix, iy, iz = 10,10,10 #number of points in each dimension
-    # ix, iy, iz = 20,20,20 #number of points in each dimension
-    ix, iy, iz = 37,37,37 #number of points in each dimension
+    ix, iy, iz = 20,20,20 #number of points in each dimension
+    # ix, iy, iz = 37,37,37 #number of points in each dimension
     # ix, iy, iz = 50,50,50 #number of points in each dimension
     # ix, iy, iz = 80,80,80 #number of points in each dimension
     grid = create_grid(GRID_LIM, GRID_LIM, GRID_LIM, n=(ix,iy,iz)) #create a grid
@@ -148,11 +153,13 @@ if __name__ == '__main__':
 
     # TESTS
 
-    # test_magfield_plot()
+    f1 = test_magfield_plot()
 
-    # test_streamplot()
+    f2 = test_streamplot()
 
-    test_magfield_animation()
+    f3 = test_magfield_animation()
+
+    plt.show()
 
 
 

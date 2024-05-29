@@ -3,3 +3,4 @@ __pycache__
 *.gif
 anim
 *.mp4
+.DS_Store

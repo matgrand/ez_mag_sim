@@ -41,8 +41,6 @@ def create_toroidal_coils_paths(R=6.2, N=18, samples=100):
     b2d = bezier_curve(bcp, samples)
     return [b2d]
 
-
-
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
