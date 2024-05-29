@@ -11,6 +11,14 @@ from mpl_toolkits.mplot3d.art3d import Line3DCollection
 FIGSIZE = (10,10)
 GRID_LIM = (-6,6)
 ARROW_LEN = 0.3
+#animation
+NPART = 4000 #number of particles to plot, reduce for a faster animation
+STEP_SIZE = 0.08 #step size for each iteration
+N_ITER = 3000 #number of iterations to animate 3000
+FPS = 30.0 #frames per second
+SKIP_FRAMES = 1 #skip frames to reduce animation size
+SAVE_MP4 = False  # use saved pics to create mp4 video, for big animations
+AUTO_ROTATE_VIEW = SAVE_MP4 or True # rotate view in 3d plot automatically
 
 #set numpy print options
 np.set_printoptions(precision=2, suppress=True, linewidth=200)
@@ -53,11 +61,6 @@ def test_magfield_plot():
     return fig
 
 def test_magfield_animation():
-    NIDXS = 300 #number of idxs to plot 3000
-    STEP_SIZE = 0.08 #step size for each iteration
-    N_ITER = 300 #number of iterations to animate 3000
-    FPS = 30.0 #frames per second
-    SKIP_FRAMES = 1 #skip frames to reduce animation size
 
     #colors
     import colorsys
@@ -65,16 +68,16 @@ def test_magfield_animation():
         c_float = colorsys.hsv_to_rgb(idx/n, 1.0, 1.0)
         return tuple([int(round(255*x)) for x in c_float])
     
-    rcol = [rainbow_c(i, NIDXS) for i in range(NIDXS)]
+    rcol = [rainbow_c(i, NPART) for i in range(NPART)]
 
     fig = plt.figure(figsize=FIGSIZE)  # big figure just to makeit full screen
     ax = fig.add_subplot(projection='3d')
     ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z', aspect='equal')
     for w in wires: w.plot(ax, color='r') #plot wires
 
-    curr_poss = np.random.uniform(GRID_LIM[0], GRID_LIM[1], (NIDXS,3)) #random positions
-    all_poss = np.zeros((N_ITER, NIDXS, 3), dtype=np.float32)
-    all_mfs = np.zeros((N_ITER, NIDXS, 3), dtype=np.float32)
+    curr_poss = np.random.uniform(GRID_LIM[0], GRID_LIM[1], (NPART,3)) #random positions
+    all_poss = np.zeros((N_ITER, NPART, 3), dtype=np.float32)
+    all_mfs = np.zeros((N_ITER, NPART, 3), dtype=np.float32)
     for i in tqdm(range(N_ITER), desc='prep anim', ncols=80, leave=False):
         curr_mf = mf.calc(curr_poss, normalized=True)
         all_poss[i], all_mfs[i] = curr_poss, curr_mf
@@ -90,43 +93,30 @@ def test_magfield_animation():
         ax.set(xlim=GRID_LIM, ylim=GRID_LIM, zlim=GRID_LIM, xlabel='x', ylabel='y', zlabel='z', aspect='equal', title=f'iteration {id}/{N_ITER}')
         update_ax(ax, all_poss[ii], all_mfs[ii], linewidths=0.8, colors=rcol)
         for w in wires: w.plot(ax, color='r') #plot wires
-        ax.view_init(elev=30, azim=2*360*id/N_ITER) #rotate view, comment to be able to rotate view yourself
+        if AUTO_ROTATE_VIEW: ax.view_init(elev=30, azim=2*360*id/N_ITER) #rotate view
         plt.tight_layout()
+        print(f'iteration {id}/{N_ITER}         ', end='\r')
         #save image
-        plt.savefig(f'anim/{id:06d}.png', dpi=300)
+        if SAVE_MP4: plt.savefig(f'anim/{id:06d}.png', dpi=100) #dpi=300
 
-    
-
-    # # matplotlib animation
-    # ani = animation.FuncAnimation(fig=fig, func=update, frames=N_ITER, interval=1000/FPS, blit=False, repeat=True)
-    # # ani.save('anim.mp4', writer='ffmpeg', fps=FPS, bitrate=1800) #save animation as an mp4. requires ffmpeg
-    # ani.save('anim.gif', progress_callback=lambda i,N_ITER:print(f'animating {i/N_ITER*100:.1f}%', end='\r'), fps=FPS) #save gif
-    
-    # create images
-    if os.path.exists('anim'): shutil.rmtree('anim'), os.mkdir('anim') #remove old images
-    for i in tqdm(range(N_ITER), desc='anim', ncols=80, leave=False): update(i) #create images
-
-    # # imageio animation
-    # import imageio
-    # images = []
-    # for i in tqdm(range(N_ITER), desc='anim', ncols=80, leave=False):
-    #     images.append(imageio.imread(f'anim/{i:04d}.png'))
-    # imageio.mimsave('anim.gif', images, fps=FPS) #save gif
-
-    # create mp4 using ffmpeg
-    os.system(f'ffmpeg -y -r {FPS} -i anim/%06d.png -c:v libx264 -vf fps={FPS} -pix_fmt yuv420p anim.mp4')
-
-    #remove images
-    shutil.rmtree('anim')
-
-    return fig
+    if SAVE_MP4: # create images
+        if os.path.exists('anim'): shutil.rmtree('anim')#remove old images
+        os.mkdir('anim') #create folder for images
+        for i in tqdm(range(N_ITER), desc='anim', ncols=80, leave=False): update(i) #create images
+        # create mp4 using ffmpeg
+        os.system(f'ffmpeg -y -r {FPS} -i anim/%06d.png -c:v libx264 -vf fps={FPS} -pix_fmt yuv420p anim.mp4')
+    else:
+        # # matplotlib animation
+        print('creating animation... this may take a while...')
+        ani = animation.FuncAnimation(fig=fig, func=update, frames=N_ITER, interval=1000/FPS, blit=False, repeat=True)
+    return None if SAVE_MP4 else ani
 
 
 if __name__ == '__main__':
     # ix, iy, iz = 10,10,10 #number of points in each dimension
-    ix, iy, iz = 20,20,20 #number of points in each dimension
+    # ix, iy, iz = 20,20,20 #number of points in each dimension
     # ix, iy, iz = 37,37,37 #number of points in each dimension
-    # ix, iy, iz = 50,50,50 #number of points in each dimension
+    ix, iy, iz = 50,50,50 #number of points in each dimension
     # ix, iy, iz = 80,80,80 #number of points in each dimension
     grid = create_grid(GRID_LIM, GRID_LIM, GRID_LIM, n=(ix,iy,iz)) #create a grid
     wp1 = create_horiz_circular_path(n=3, r=2.0, z=-1.0) #create a wire path
