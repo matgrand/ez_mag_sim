@@ -107,8 +107,7 @@ def test_magfield_animation():
         # create mp4 using ffmpeg
         os.system(f'ffmpeg -y -r {FPS} -i anim/%06d.png -c:v libx264 -vf fps={FPS} -pix_fmt yuv420p anim.mp4')
     else:
-        # # matplotlib animation
-        print('creating animation... this may take a while...')
+        # matplotlib animation
         ani = animation.FuncAnimation(fig=fig, func=update, frames=N_ITER, interval=1000/FPS/ANIM_SPEED, blit=False, repeat=True)
     return None if SAVE_MP4 else ani
 
