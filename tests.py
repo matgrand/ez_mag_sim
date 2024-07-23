@@ -12,9 +12,9 @@ FIGSIZE = (10,10)
 GRID_LIM = (-6,6)
 ARROW_LEN = 0.3
 #animation
-NPART = 4000 #number of particles to plot, reduce for a faster animation
+NPART = 2000 #number of particles to plot, reduce for a faster animation
 STEP_SIZE = 0.08 #step size for each iteration
-N_ITER = 3000 #number of iterations to animate 3000
+N_ITER = 1000 #number of iterations to animate 3000
 FPS = 30.0 #frames per second
 ANIM_SPEED = 2.5 #speed of animation (can also be used to speed up slow animations)
 SKIP_FRAMES = 1 #skip frames to reduce animation size
