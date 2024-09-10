@@ -112,13 +112,14 @@ def test_magfield_animation():
     return None if SAVE_MP4 else ani
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
     # ix, iy, iz = 10,10,10 #number of points in each dimension
     # ix, iy, iz = 20,20,20 #number of points in each dimension
     # ix, iy, iz = 37,37,37 #number of points in each dimension
     ix, iy, iz = 53,53,53 #number of points in each dimension
     # ix, iy, iz = 80,80,80 #number of points in each dimension
     grid = create_grid(GRID_LIM, GRID_LIM, GRID_LIM, n=(ix,iy,iz)) #create a grid
+    print(f'grid shape: {grid.shape}')
     wp1 = create_horiz_circular_path(n=3, r=2.0, z=-1.0) #create a wire path
     wp2 = create_horiz_circular_path(n=5, r=2.0, z=1.5) #create a wire path
     # wp3 = create_horiz_circular_path(n=6, r=2.0, z=-1.5) #create a wire path
