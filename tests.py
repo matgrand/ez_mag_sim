@@ -9,7 +9,8 @@ import matplotlib.animation as animation
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
 FIGSIZE = (10,10)
-GRID_LIM = (-6,6)
+# GRID_LIM = (-6,6)
+GRID_LIM = (-1.5,1.5)
 ARROW_LEN = 0.3
 #animation
 NPART = 2000 #number of particles to plot, reduce for a faster animation
@@ -115,8 +116,10 @@ def test_magfield_animation():
 if __name__ == '__main__': 
     # ix, iy, iz = 10,10,10 #number of points in each dimension
     # ix, iy, iz = 20,20,20 #number of points in each dimension
+    ix, iy, iz = 15,15,15 #number of points in each dimension
     # ix, iy, iz = 37,37,37 #number of points in each dimension
-    ix, iy, iz = 53,53,53 #number of points in each dimension
+    # ix, iy, iz = 53,53,53 #number of points in each dimension
+    # ix, iy, iz = 3,3,3 #number of points in each dimension
     # ix, iy, iz = 80,80,80 #number of points in each dimension
     grid = create_grid(GRID_LIM, GRID_LIM, GRID_LIM, n=(ix,iy,iz)) #create a grid
     print(f'grid shape: {grid.shape}')
@@ -127,12 +130,13 @@ if __name__ == '__main__':
     wp4 = np.array([[[3],[1.5*np.sin(t)],[1.5*np.cos(t)]] for t in np.linspace(0,2*np.pi,7+1)]).reshape((-1,3))
 
     ## FEM
-    w1 = FemWire(wp1, V=50,  seg_len=0.1) #create a wire
-    w2 = FemWire(wp2, V=40,  seg_len=0.1) #create a wire
-    w3 = FemWire(wp3, V=-40, seg_len=0.1) #create a wire
-    w4 = FemWire(wp4, V=-40, seg_len=0.1) #create a wire
+    w1 = FemWire(wp1, V=50,  seg_len=0.01) #create a wire
+    w2 = FemWire(wp2, V=40,  seg_len=0.01) #create a wire
+    w3 = FemWire(wp3, V=-40, seg_len=0.01) #create a wire
+    w4 = FemWire(wp4, V=-40, seg_len=0.01) #create a wire
     # wires = [w1, w2, w3] 
-    wires = [w1, w2, w3, w4]
+    # wires = [w1, w2, w3, w4]
+    wires = [w1, w2]
     # wires = [w1] 
 
     mf = FemMagField(wires) #create a magnetic field
@@ -142,13 +146,16 @@ if __name__ == '__main__':
     print(f'calc0: {calce-calcs:.3f} s')
     print(f'mean of mf norm: {np.mean(mf.normB):.5f} T')
 
-    # TESTS
+    #print normB line by line
+    for i in range(0, min(mf.normB.shape[0], 10)):
+        print(f'grid: ({grid[i,0]:.2f},{grid[i,1]:.2f},{grid[i,2]:.2f}) normB[{i}]: {mf.normB[i]:.5f}')
+    # # TESTS
 
     f1 = test_magfield_plot()
 
-    f2 = test_streamplot()
+    # f2 = test_streamplot()
 
-    f3 = test_magfield_animation()
+    # f3 = test_magfield_animation()
 
     plt.show()
 

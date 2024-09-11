@@ -4,7 +4,8 @@ from time import time
 from numpy import ndarray
 
 CHUNCK_SIZE = 1e8
-T = np.float32
+# T = np.float32
+T = np.float64
 
 class FemWire():
     def __init__(self, wp, V=0.0, ρ=1.77e-8, section=1e-4, seg_len=5e-2):
