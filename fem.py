@@ -3,10 +3,10 @@ from tqdm import tqdm
 from time import time
 from numpy import ndarray
 
-import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
-os.environ['MKL_NUM_THREADS'] = '1'
-np.__config__.show()
+# import os
+# os.environ['OPENBLAS_NUM_THREADS'] = '1'
+# os.environ['MKL_NUM_THREADS'] = '1'
+# np.__config__.show()
 
 # T = np.float32
 T = np.float64
