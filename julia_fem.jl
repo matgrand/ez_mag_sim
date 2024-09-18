@@ -12,9 +12,7 @@ end
 function calc_mag_field(wpaths, wIs, gpoints) 
     B = [[0.0, 0.0, 0.0] for _ in 1:size(gpoints,1)] # B field
     μ0 = 4π * 1e-7
-    for i in 1:size(wpaths,1) # loop over wires
-        w = wpaths[i]
-        I = wIs[i]
+    for (w, I) in zip(wpaths, wIs)
         wa, wb = w, circshift(w, -1) # wire points
         dl = wb - wa # wire segment (m,3)
         wm = (wa + wb) / 2  # wire segment midpoint 
