@@ -7,7 +7,7 @@ function path_length(x::Array)
     return sum(norms)
 end
 
-function upresample(x::Array, s)
+function upresample(x::Vector{Vector}, s)
     diff = x - circshift(x, 1)
     norms = [norm(diff[i,:]) for i in axes(diff, 1)]
     L = sum(norms)

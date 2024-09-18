@@ -21,10 +21,10 @@ end
 function create_horiz_circular_path(n=8, r=2.0, z=1.0)
     # create a wire path
     t = range(0, stop=2π, length=n+1)
-    x = r * cos.(t)
-    y = r * sin.(t)
-    z = fill(z, n+1)
-    wp = [x y z]
+    wp = [r * cos.(t), r * sin.(t), fill(z, n+1)]  # Create a wire path
+    println("wp type: $(typeof(wp))")
+    println("wp size: $(size(wp))")
+    println("wp: $wp")
     return wp
 end;
 
@@ -34,7 +34,7 @@ end;
 const myT = Float64 # type of the wire
 
 mutable struct FemWire
-    wp::Array{myT, 2}
+    wp::Vector{Vector{myT}} # wire path (m,3)
     V::myT
     ρ::myT
     section::myT
@@ -44,7 +44,7 @@ mutable struct FemWire
     I::myT
     
     # constructor with calculated parameters R L I
-    function FemWire(wp::Array{myT, 2}, V::myT, ρ::myT, section::myT, seg_len::myT)
+    function FemWire(wp::Vector{Vector{myT}}, V::myT, ρ::myT, section::myT, seg_len::myT)
         # calculate length of the wire L, and resample the wire path with seg_len
         L = path_length(wp) # length L = path_length(wp) 
         R = ρ * L / section # resistance R = ρ * L / A
@@ -55,7 +55,7 @@ mutable struct FemWire
     end
 end
 
-function calc_mf(ws::Array{FemWire}, fem_grid::Array{myT, 2}) 
+function calc_mf(ws::Vector{FemWire}, fem_grid::Vector{Vector{myT}}) 
     # calculate B field on a fem_grid
     @assert size(fem_grid, 2) == 3 "fem_grid must be a (n,3) array, not $(size(fem_grid))"
     B = zeros(size(fem_grid,1), 3) # B field
@@ -66,7 +66,7 @@ function calc_mf(ws::Array{FemWire}, fem_grid::Array{myT, 2})
         @assert size(wp1, 1) == size(wp2, 1) "wp1 and wp2 must have the same number of points"
         @assert size(wp1, 2) == 3 "wp1 must be a (m,3) array, not $(size(wp1))"
         for i in axes(fem_grid, 1) # loop over fem_grid points
-            for j in axes(w.wp, 1)
+            for j in axes(w.wp, 1) # loop over wire points
                 dl = wp2 - wp1 # dl 
                 wm = (wp1 + wp2) / 2 # wire midpoint
                 r = wm - fem_grid[i,:] # r 
@@ -75,6 +75,7 @@ function calc_mf(ws::Array{FemWire}, fem_grid::Array{myT, 2})
                 B[i,:] += μ0 * w.I * cross(dl, r̂) / (4 * π * rnorm^2) # Biot-Savart law
             end
         end
+	# map(x ->  f(x[1], x[2]), Iterators.product(axes1, axes2))
     end
     return B
 end;
@@ -90,11 +91,11 @@ gr = create_grid(GRID_RANGE,GRID_RANGE,GRID_RANGE, (N_GRID, N_GRID, N_GRID))
 wp1 = create_horiz_circular_path(3, 2.0, -1.0)
 wp2 = create_horiz_circular_path(5, 2.0, 1.5)
 
-# # # plot wire paths
-# plot() # create a plot
-# plot!(wp1[:,1], wp1[:,2], wp1[:,3], label="wp1", line=(:red, 3))
-# plot!(wp2[:,1], wp2[:,2], wp2[:,3], label="wp2", line=(:blue, 3))
-# display(plot!()) # display the plot
+# # plot wire paths
+plot() # create a plot
+plot!(wp1[:,1], wp1[:,2], wp1[:,3], label="wp1", line=(:red, 3))
+plot!(wp2[:,1], wp2[:,2], wp2[:,3], label="wp2", line=(:blue, 3))
+display(plot!()) # display the plot
 
 w1 = FemWire(wp1, 50.0, 1.77e-8, 1e-4, 0.01)
 w2 = FemWire(wp2, 40.0, 1.77e-8, 1e-4, 0.01) 
@@ -103,12 +104,14 @@ wires = [w1, w2]
 # wires = [w1]
 println("wires created")
 
-# # plot wires
-# plot() # create a plot
-# plot!(w1.wp[:,1], w1.wp[:,2], w1.wp[:,3], label="w1", line=(:red, 3))
-# plot!(w2.wp[:,1], w2.wp[:,2], w2.wp[:,3], label="w2", line=(:blue, 3))
-# display(plot!()) # display the plot
-# println("wires plotted")
+# plot wires
+plot() # create a plot
+plot!(w1.wp[:,1], w1.wp[:,2], w1.wp[:,3], label="w1", line=(:red, 3))
+plot!(w2.wp[:,1], w2.wp[:,2], w2.wp[:,3], label="w2", line=(:blue, 3))
+display(plot!()) # display the plot
+println("wires plotted")
+readline()
+
 
 @time B = calc_mf(wires, gr)
 println("B field calculated")
@@ -130,13 +133,13 @@ end
 # display(plot!()) # display the plot
 
 
-# plotting matplotlib
-using PyPlot
-fig = figure(figsize=(10,10))
-ax = fig.add_subplot(111, projection="3d")
-ax.quiver(gr[:,1], gr[:,2], gr[:,3], B[:,1], B[:,2], B[:,3], length=0.1, normalize=true)
-ax.plot(wp1[:,1], wp1[:,2], wp1[:,3], label="wp1", color="red")
-ax.plot(wp2[:,1], wp2[:,2], wp2[:,3], label="wp2", color="blue")
-legend()
-show()
+# # plotting matplotlib
+# using PyPlot
+# fig = figure(figsize=(10,10))
+# ax = fig.add_subplot(111, projection="3d")
+# ax.quiver(gr[:,1], gr[:,2], gr[:,3], B[:,1], B[:,2], B[:,3], length=0.1, normalize=true)
+# ax.plot(wp1[:,1], wp1[:,2], wp1[:,3], label="wp1", color="red")
+# ax.plot(wp2[:,1], wp2[:,2], wp2[:,3], label="wp2", color="blue")
+# legend()
+# show()
 
