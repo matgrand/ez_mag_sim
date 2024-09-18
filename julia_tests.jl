@@ -2,131 +2,82 @@
 using LinearAlgebra
 using Plots
 using ProgressMeter
+using InteractiveUtils
 # plotlyjs()
+using Printf
+Base.show(io::IO, f::Float64) = @printf(io, "%.4f", f) # show only 2 decimals
+
 include("utils.jl")
+include("julia_fem.jl")
 
 function create_grid(xlim=(-1,1), ylim=(-1,1), zlim=(-1,1), n=(10,10,10))
     x = range(xlim[1], stop=xlim[2], length=n[1])
     y = range(ylim[1], stop=ylim[2], length=n[2])
     z = range(zlim[1], stop=zlim[2], length=n[3])
-    grid = zeros(n[1]*n[2]*n[3], 3)
+    grid = [[0.0, 0.0, 0.0] for _ in 1:n[1]*n[2]*n[3]]
     for i in 1:n[1], j in 1:n[2], k in 1:n[3]
-        grid[(i-1)*n[2]*n[3] + (j-1)*n[3] + k, 1] = x[i]
-        grid[(i-1)*n[2]*n[3] + (j-1)*n[3] + k, 2] = y[j]
-        grid[(i-1)*n[2]*n[3] + (j-1)*n[3] + k, 3] = z[k]
+        grid[(i-1)*n[2]*n[3] + (j-1)*n[3] + k] = [x[i], y[j], z[k]]
     end
+    
     return grid
 end
 
 function create_horiz_circular_path(n=8, r=2.0, z=1.0)
     # create a wire path
-    t = range(0, stop=2π, length=n+1)
-    wp = [r * cos.(t), r * sin.(t), fill(z, n+1)]  # Create a wire path
-    println("wp type: $(typeof(wp))")
-    println("wp size: $(size(wp))")
-    println("wp: $wp")
+    ts = range(0, stop=2π, length=n+1)
+    wp = [[r*cos(t), r*sin(t), z] for t in ts]
     return wp
-end;
-
-## 
-
-# wire and magnetic field
-const myT = Float64 # type of the wire
-
-mutable struct FemWire
-    wp::Vector{Vector{myT}} # wire path (m,3)
-    V::myT
-    ρ::myT
-    section::myT
-    seg_len::myT
-    R::myT
-    L::myT
-    I::myT
-    
-    # constructor with calculated parameters R L I
-    function FemWire(wp::Vector{Vector{myT}}, V::myT, ρ::myT, section::myT, seg_len::myT)
-        # calculate length of the wire L, and resample the wire path with seg_len
-        L = path_length(wp) # length L = path_length(wp) 
-        R = ρ * L / section # resistance R = ρ * L / A
-        I = V / R # current I = V / R
-        # resample the wire path with seg_len
-        wp = upresample(wp, seg_len) # resample the wire path
-        return new(wp, V, ρ, section, seg_len, R, L, I)
-    end
-end
-
-function calc_mf(ws::Vector{FemWire}, fem_grid::Vector{Vector{myT}}) 
-    # calculate B field on a fem_grid
-    @assert size(fem_grid, 2) == 3 "fem_grid must be a (n,3) array, not $(size(fem_grid))"
-    B = zeros(size(fem_grid,1), 3) # B field
-    # calculate B field, n=fem_grid points, m=wire points
-    μ0 = 4 * π * 1e-7 # vacuum permeability
-    for w in wires # loop over wires 
-        wp1, wp2 = w.wp, circshift(w.wp, -1) # wire points (m,3)
-        @assert size(wp1, 1) == size(wp2, 1) "wp1 and wp2 must have the same number of points"
-        @assert size(wp1, 2) == 3 "wp1 must be a (m,3) array, not $(size(wp1))"
-        for i in axes(fem_grid, 1) # loop over fem_grid points
-            for j in axes(w.wp, 1) # loop over wire points
-                dl = wp2 - wp1 # dl 
-                wm = (wp1 + wp2) / 2 # wire midpoint
-                r = wm - fem_grid[i,:] # r 
-                rnorm = norm(r) # r norm 
-                r̂ = r / rnorm # unit vector r 
-                B[i,:] += μ0 * w.I * cross(dl, r̂) / (4 * π * rnorm^2) # Biot-Savart law
-            end
-        end
-	# map(x ->  f(x[1], x[2]), Iterators.product(axes1, axes2))
-    end
-    return B
 end;
 
 ##
 
 # test all the functions
-const N_GRID = 15
+const N_GRID = 20
 const GRID_RANGE = (-1.5,1.5)
 
-gr = create_grid(GRID_RANGE,GRID_RANGE,GRID_RANGE, (N_GRID, N_GRID, N_GRID))
+gpts = create_grid(GRID_RANGE,GRID_RANGE,GRID_RANGE, (N_GRID, N_GRID, N_GRID)) # grid points
 
-wp1 = create_horiz_circular_path(3, 2.0, -1.0)
 wp2 = create_horiz_circular_path(5, 2.0, 1.5)
+wp1 = create_horiz_circular_path(3, 2.0, -1.0)
 
-# # plot wire paths
-plot() # create a plot
-plot!(wp1[:,1], wp1[:,2], wp1[:,3], label="wp1", line=(:red, 3))
-plot!(wp2[:,1], wp2[:,2], wp2[:,3], label="wp2", line=(:blue, 3))
-display(plot!()) # display the plot
+# # # plot wire paths
+# plot() # create a plot
+# plot!(wp1[:,1], wp1[:,2], wp1[:,3], label="wp1", line=(:red, 3))
+# plot!(wp2[:,1], wp2[:,2], wp2[:,3], label="wp2", line=(:blue, 3))
+# display(plot!()) # display the plot
 
-w1 = FemWire(wp1, 50.0, 1.77e-8, 1e-4, 0.01)
-w2 = FemWire(wp2, 40.0, 1.77e-8, 1e-4, 0.01) 
+w2, I2 = create_wire(wp2, 40.0, 1.77e-8, 1e-4, 0.01)
+w1, I1 = create_wire(wp1, 50.0, 1.77e-8, 1e-4, 0.01)
 
-wires = [w1, w2]
-# wires = [w1]
-println("wires created")
+wpaths = [w1, w2]
+wIs = [I1, I2]
 
-# plot wires
-plot() # create a plot
-plot!(w1.wp[:,1], w1.wp[:,2], w1.wp[:,3], label="w1", line=(:red, 3))
-plot!(w2.wp[:,1], w2.wp[:,2], w2.wp[:,3], label="w2", line=(:blue, 3))
-display(plot!()) # display the plot
-println("wires plotted")
-readline()
+# # plot wires
+# plot() # create a plot
+# x1, y1, z1 = [w[1] for w in w1], [w[2] for w in w1], [w[3] for w in w1]
+# x2, y2, z2 = [w[1] for w in w2], [w[2] for w in w2], [w[3] for w in w2] 
+# plot!(x1, y1, z1, label="wp1", line=(:red, 3))
+# plot!(x2, y2, z2, label="wp2", line=(:blue, 3))
+# display(plot!()) # display the plot
+# println("wires plotted")
 
+_ = calc_mag_field(wpaths, wIs, gpts)
+# _ = @code_warntype calc_mag_field(wpaths, wIs, gpts)
 
-@time B = calc_mf(wires, gr)
-println("B field calculated")
+@time B = calc_mag_field(wpaths, wIs, gpts)
+# println("B field calculated")
 
-# calculate a vector of norms using list comprehension
-normB = [norm(B[i,:]) for i in axes(B, 1)]
-#print normB line for line
-for i in axes(normB, 1)[1:10]
-    println("grid: ($(round(gr[i,1], digits=3)),$(round(gr[i,2], digits=3)),$(round(gr[i,3], digits=3))) normB: $(round(normB[i], digits=5))")
-end
+# # calculate a vector of norms using list comprehension
+# normB = [norm(B[i,:]) for i in axes(B, 1)]
+# #print normB line for line
+# for i in axes(normB, 1)[1:10]
+#     println("grid: $(gpts[i,:]) B: $(B[i,:]) normB: $(normB[i])")
+# end
 
 # plot() # create a plot
 # u, v, w = normB[:,1], normB[:,2], normB[:,3]
-# # quiver!(gr[:,1], gr[:,2], gr[:,3], quiver=(u, v, w),color=:blues, colorbar_title="B", normalize=true)
-# arrow3d!(gr[:,1], gr[:,2], gr[:,3], u, v, w, as=0.2, lc=:black, la=0.5, lw=2)
+# # quiver!(gpts[:,1], gpts[:,2], gpts[:,3], quiver=(u, v, w),color=:blues, colorbar_title="B", normalize=true)
+# arrow3d!(gpts[:,1], gpts[:,2], gpts[:,3], u, v, w, as=0.2, lc=:black, la=0.5, lw=2)
 # # plot wire paths
 # plot!(wp1[:,1], wp1[:,2], wp1[:,3], label="wp1", line=(:red, 3))
 # plot!(wp2[:,1], wp2[:,2], wp2[:,3], label="wp2", line=(:blue, 3))
@@ -137,7 +88,7 @@ end
 # using PyPlot
 # fig = figure(figsize=(10,10))
 # ax = fig.add_subplot(111, projection="3d")
-# ax.quiver(gr[:,1], gr[:,2], gr[:,3], B[:,1], B[:,2], B[:,3], length=0.1, normalize=true)
+# ax.quiver(gpts[:,1], gpts[:,2], gpts[:,3], B[:,1], B[:,2], B[:,3], length=0.1, normalize=true)
 # ax.plot(wp1[:,1], wp1[:,2], wp1[:,3], label="wp1", color="red")
 # ax.plot(wp2[:,1], wp2[:,2], wp2[:,3], label="wp2", color="blue")
 # legend()

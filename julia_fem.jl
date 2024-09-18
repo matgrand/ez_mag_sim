@@ -1,97 +1,82 @@
 using LinearAlgebra
-using PyPlot
 using ProgressMeter
 
-const T = Float32 # Float32 or Float64
-
-struct FemWire
-    wp::Array{T, 3} # wire path (m,3)
-    V::T # voltage
-    ρ::T # resistivity
-    section::T # section area
-    seg_len::T # segment length
-    R::T # resistance
-    L::T # length
-    I::T # current
-    _in_wp::Array{T, 3} # input wire path
-    
-    function FemWire(wp::Array{T, 3}, V::T=0.0, ρ::T=1.77e-8, section::T=1e-4, seg_len::T=5e-2)
-        fw = new{T}()
-        fw.wp = wp
-        fw.V = V
-        fw.ρ = ρ
-        fw.section = section
-        fw.seg_len = seg_len
-        fw.R = zero(T)
-        fw.L = zero(T)
-        fw.I = zero(T)
-        fw._in_wp = copy(fw.wp)
-        
-        # calculate length of wire
-        diff = fw.wp - circshift(fw.wp, (1, 0)) # difference between points
-        fw.L = sum(sqrt.(sum(diff.^2, dims=2)))
-        
-        # resample wire path with segments of length similar to seg_len
-        w = []
-        for i in 1:size(fw.wp, 1)
-            p1, p2 = fw.wp[i, :], fw.wp[mod1(i+1, size(fw.wp, 1)), :]
-            l = norm(p2 - p1)
-            n = Int(l / fw.seg_len)
-            for ii in 0:n-1
-                push!(w, p1 + (p2 - p1) * ii / n)
-            end
-        end
-        fw.wp = convert(Array{T}, w)
-        
-        fw.R = fw.ρ * fw.L / fw.section # resistance R = ρ * L / A
-        fw.I = fw.V / fw.R # current I = V / R
-        
-        return fw
-    end
+function create_wire(wp, V, ρ, section, seg_len)
+    L = path_length(wp) # length L = path_length(wp) 
+    R = ρ * L / section # resistance R = ρ * L / A
+    I = V / R # current I = V / R
+    wp = upresample(wp, seg_len) # resample the wire path
+    return wp, I
 end
 
-function Base.show(io::IO, w::FemWire)
-    println(io, "Wire: V=$(w.V) V, ρ=$(w.ρ) Ωm, s=$(w.section) m^2, L=$(w.L) m, R=$(w.R) Ω, I=$(w.I) A")
-end
-
-function plot(w::FemWire, ax::PyPlot.Axes; kwargs...)
-    ax.plot(w._in_wp[:, 1], w._in_wp[:, 2], w._in_wp[:, 3]; kwargs...)
-    return ax
-end
-
-struct FemMagField
-    wires::Vector{FemWire}
-    B::Array{T, 3}
-    normB::Array{T, 1}
-    
-    function FemMagField(wires::Vector{FemWire})
-        mg = new{T}()
-        mg.wires = wires
-        mg.B = zeros(T, size(wires[1].wp, 1), 3)
-        mg.normB = zeros(T, size(wires[1].wp, 1))
-        return mg
-    end
-end
-
-function calc(mf::FemMagField, grid::Array{T, 3}) where T
-    # calculate B field on a grid
-    @assert size(grid, 2) == 3 "grid must be a (n,3) array, not $(size(grid))"
-    mf.B .= zero(T) # initialize B field
-    
-    # calculate B field, n=grid points, m=wire points
-    μ0 = 4 * π * 1e-7 # vacuum permeability
-    for (wi, w) in enumerate(mf.wires) # for each wire
-        wp1, wp2 = w.wp, circshift(w.wp, (-1, 0)) # wire points (m,3)
-        dl = wp2 - wp1 # dl (m,3)
-        wm = (wp1 + wp2) / 2 # wire middle (m,3)
-        @progress for i in 1:size(grid, 1) # n times
-            r = grid[i, :] - wm # r (m,3)
-            rnorm = vecnorm(r, dims=2) # |r| (m,1)
-            r̂ = r ./ rnorm # unit vector r (m,3)
-            mf.B[i, :] .+= sum(μ0 * w.I .* cross(dl, r̂) ./ (4 * π * rnorm.^2), dims=1) # Biot-Savart law
+function calc_mag_field(wpaths, wIs, gpoints) 
+    B = [[0.0, 0.0, 0.0] for _ in 1:size(gpoints,1)] # B field
+    μ0 = 4π * 1e-7
+    for i in 1:size(wpaths,1) # loop over wires
+        w = wpaths[i]
+        I = wIs[i]
+        wa, wb = w, circshift(w, -1) # wire points
+        dl = wb - wa # wire segment (m,3)
+        wm = (wa + wb) / 2  # wire segment midpoint 
+        for (ig, p) in enumerate(gpoints) # loop over grid points
+            r = (p,) .- wm # vector from wire segment midpoint to grid point (m,3)
+            rnorm = norm.(r) # distance from wire segment midpoint to grid point (m)
+            r̂ = r ./ rnorm # unit vector from wire segment midpoint to grid point (m,3)
+            B[ig] += μ0 * I * sum(cross.(dl, r̂) ./ rnorm.^2) / 4π # Biot-Savart law
         end
     end
-    
-    mf.normB = vecnorm(mf.B, dims=2)
-    return mf.B
+    return B
 end
+
+# function calc_mag_field(wpaths, wIs, gpoints) 
+#     # println("wpaths: $(typeof(wpaths)), $(size(wpaths)), $(size(wpaths[1])), $(size(wpaths[1][1]))")
+#     # println("wIs: $(typeof(wIs)), $(size(wIs))")
+#     # println("gpoints: $(typeof(gpoints)), $(size(gpoints)), $(size(gpoints[1]))")
+#     B = [[0.0, 0.0, 0.0] for _ in 1:size(gpoints,1)] # B field
+#     μ0 = 4π * 1e-7
+#     for (w, I) in zip(wpaths, wIs)
+#         wa, wb = w, circshift(w, -1) # wire points 
+#         dl = wb - wa # wire segment (m,3)
+#         wm = (wa + wb) / 2  # wire segment midpoint 
+#         @showprogress for (ig, p) in enumerate(gpoints)
+#             # println("p: $(p), wm: $(wm)")
+#             # println("p size: $(size(p)), wm size: $(size(wm)) $(size(wm[1]))")
+#             r = (p,) .- wm # vector from wire segment midpoint to grid point (m,3)
+#             # println("r: $(r)")
+#             rnorm = norm.(r) # distance from wire segment midpoint to grid point (m)
+#             # println("rnorm: $(rnorm)")
+#             r̂ = r ./ rnorm # unit vector from wire segment midpoint to grid point (m,3)
+#             # cr = cross.(dl, r̂) # cross product of dl and r̂ (m,3)
+#             # println("cr: $(cr)")
+#             # println("sum: $(sum(μ0 * cross.(dl, r̂) * I ./ (4π * rnorm.^2)))")
+#             B[ig] += μ0 * I * sum(cross.(dl, r̂) ./ rnorm.^2) / 4π # Biot-Savart law
+#         end
+#     end
+#     return B
+# end
+
+
+# function calc_mf(ws::Vector{FemWire}, fem_grid::Vector{Vector{myT}}) 
+#     # calculate B field on a fem_grid
+#     @assert size(fem_grid, 2) == 3 "fem_grid must be a (n,3) array, not $(size(fem_grid))"
+#     B = zeros(size(fem_grid,1), 3) # B field
+#     # calculate B field, n=fem_grid points, m=wire points
+#     μ0 = 4 * π * 1e-7 # vacuum permeability
+#     for w in wires # loop over wires 
+#         wp1, wp2 = w.wp, circshift(w.wp, -1) # wire points (m,3)
+#         @assert size(wp1, 1) == size(wp2, 1) "wp1 and wp2 must have the same number of points"
+#         @assert size(wp1, 2) == 3 "wp1 must be a (m,3) array, not $(size(wp1))"
+#         for i in axes(fem_grid, 1) # loop over fem_grid points
+#             for j in axes(w.wp, 1) # loop over wire points
+#                 dl = wp2 - wp1 # dl 
+#                 wm = (wp1 + wp2) / 2 # wire midpoint
+#                 r = wm - fem_grid[i,:] # r 
+#                 rnorm = norm(r) # r norm 
+#                 r̂ = r / rnorm # unit vector r 
+#                 B[i,:] += μ0 * w.I * cross(dl, r̂) / (4 * π * rnorm^2) # Biot-Savart law
+#             end
+#         end
+# 	# map(x ->  f(x[1], x[2]), Iterators.product(axes1, axes2))
+#     end
+#     return B
+# end;

@@ -161,8 +161,8 @@ def test_magfield_animation():
 
 if __name__ == '__main__': 
     # ix, iy, iz = 10,10,10 #number of points in each dimension
-    # ix, iy, iz = 20,20,20 #number of points in each dimension
-    ix, iy, iz = 15,15,15 #number of points in each dimension
+    ix, iy, iz = 20,20,20 #number of points in each dimension
+    # ix, iy, iz = 15,15,15 #number of points in each dimension
     # ix, iy, iz = 37,37,37 #number of points in each dimension
     # ix, iy, iz = 53,53,53 #number of points in each dimension
     # ix, iy, iz = 3,3,3 #number of points in each dimension
@@ -181,8 +181,11 @@ if __name__ == '__main__':
     wp3, wI3 = create_wire(wp3, V=-40, seg_len=0.01) #create a wire
     wp4, wI4 = create_wire(wp4, V=-40, seg_len=0.01) #create a wire 
     
-    wpaths = [wp1, wp2, wp3, wp4]
-    wIs = [wI1, wI2, wI3, wI4]
+    # wpaths = [wp1, wp2, wp3, wp4]
+    # wIs = [wI1, wI2, wI3, wI4]
+
+    wpaths = [wp1, wp2]
+    wIs = [wI1, wI2]
 
     calcs = time()
     B = calc_mag_field(wpaths, wIs, grid) #create a magnetic field
@@ -197,14 +200,13 @@ if __name__ == '__main__':
         print(f'grid: ({grid[i,0]:.2f},{grid[i,1]:.2f},{grid[i,2]:.2f}) normB[{i}]: {normB[i]:.5f}')
     # # TESTS
 
-    f1 = test_magfield_plot()
+    # f1 = test_magfield_plot()
 
-    f2 = test_streamplot()
+    # f2 = test_streamplot()
 
-    f3 = test_magfield_animation()
+    # f3 = test_magfield_animation()
 
     plt.show()
-
 
 
 

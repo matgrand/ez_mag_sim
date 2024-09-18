@@ -7,36 +7,28 @@ function path_length(x::Array)
     return sum(norms)
 end
 
-function upresample(x::Vector{Vector}, s)
+function upresample(x, s)
     diff = x - circshift(x, 1)
     norms = [norm(diff[i,:]) for i in axes(diff, 1)]
     L = sum(norms)
     n_segments = Int(ceil(L/s))
     s_new = L/n_segments # update s
-    xnew = zeros(Float32, n_segments+1, size(x, 2))
+    xnew = [[0.0, 0.0, 0.0] for _ in 1:n_segments]          
     # interpolate
     for i in 1:n_segments
         t = (i-1)*s_new
         idx = findfirst(x -> x > t, cumsum(norms))
         if idx == 1
-            xnew[i,:] = x[1,:]
+            xnew[i] = x[1]
         else
             t0 = cumsum(norms)[idx-1]
             t1 = cumsum(norms)[idx]
             alpha = (t - t0)/(t1 - t0)
-            xnew[i,:] = x[idx-1,:] + alpha*(x[idx,:] - x[idx-1,:])
+            xnew[i] = x[idx-1] + alpha*(x[idx] - x[idx-1])
         end
     end
     #add the first point back to the end
     xnew[end,:] = x[1,:]
-
-    # # 3d plot x and xnew
-    # plot()
-    # plot!(x[:,1], x[:,2], x[:,3], label="x", line=(:red, 2))
-    # scatter!(x[:,1], x[:,2], x[:,3], label="x", markercolor=:red)
-    # # plot!(xnew[:,1], xnew[:,2], xnew[:,3], label="xnew", line=(:blue, 2))
-    # scatter!(xnew[:,1], xnew[:,2], xnew[:,3], label="xnew", markercolor=:blue)
-    # display(plot!())
     return xnew
 end
 
