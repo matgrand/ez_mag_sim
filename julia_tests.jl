@@ -36,6 +36,7 @@ const N_GRID = 20
 const GRID_RANGE = (-1.5,1.5)
 
 gpts = create_grid(GRID_RANGE,GRID_RANGE,GRID_RANGE, (N_GRID, N_GRID, N_GRID)) # grid points
+println("grid points: $(size(gpts,1))")
 
 wp2 = create_horiz_circular_path(5, 2.0, 1.5)
 wp1 = create_horiz_circular_path(3, 2.0, -1.0)
@@ -61,8 +62,9 @@ wIs = [I1, I2]
 # display(plot!()) # display the plot
 # println("wires plotted")
 
-_ = calc_mag_field(wpaths, wIs, gpts)
-# _ = @code_warntype calc_mag_field(wpaths, wIs, gpts)
+# _ = calc_mag_field(wpaths, wIs, gpts)
+# _ = calc_mag_field(wpaths, wIs, gpts)
+_ = @code_warntype calc_mag_field(wpaths, wIs, gpts)
 
 @time B = calc_mag_field(wpaths, wIs, gpts)
 # println("B field calculated")
