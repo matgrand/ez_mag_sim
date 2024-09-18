@@ -33,7 +33,8 @@ println("wire: $(size(w))")
 grpts = [V3(rand(), rand(), rand()) for _ in 1:10000]
 println("grid: $(size(grpts))")
 
-B0 = @code_warntype calc_mag_field(w, 100.0, grpts) # warm up
+# B0 = @code_warntype calc_mag_field(w, 100.0, grpts) 
 
 # calculate the magnetic field
+@time B = calc_mag_field(w, 100.0, grpts)
 @time B = calc_mag_field(w, 100.0, grpts)
