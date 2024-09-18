@@ -162,7 +162,7 @@ def test_magfield_animation():
 if __name__ == '__main__': 
     # ix, iy, iz = 10,10,10 #number of points in each dimension
     # ix, iy, iz = 20,20,20 #number of points in each dimension
-    # ix, iy, iz = 15,15,15 #number of points in each dimension
+    ix, iy, iz = 15,15,15 #number of points in each dimension
     # ix, iy, iz = 37,37,37 #number of points in each dimension
     # ix, iy, iz = 53,53,53 #number of points in each dimension
     # ix, iy, iz = 3,3,3 #number of points in each dimension
