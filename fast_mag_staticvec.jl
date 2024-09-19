@@ -10,10 +10,14 @@ struct V3{T} <: FieldVector{3,T}
 end
 
 # define + - for Vector{V3} and V3
-Base.:-(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = a .- Ref(b) # [ai - b for ai in a]
-Base.:-(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = Ref(a) .- b
-Base.:+(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = a .+ Ref(b)
-Base.:+(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = Ref(a) .+ b
+# Base.:-(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = a .- Ref(b) # [ai - b for ai in a]
+# Base.:-(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = Ref(a) .- b
+# Base.:+(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = a .+ Ref(b)
+# Base.:+(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = Ref(a) .+ b
+Base.:-(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = [ai - b for ai in a]
+Base.:-(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = [a - bi for bi in b]
+Base.:+(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = [ai + b for ai in a]
+Base.:+(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = [a + bi for bi in b]
 
 function calc_mag_field(w, I, grpts) 
     B = [V3(0.,0.,0.) for _ in 1:size(grpts,1)] # B field

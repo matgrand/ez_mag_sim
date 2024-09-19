@@ -1,5 +1,21 @@
 # functions for julia
 using LinearAlgebra
+using StaticArrays
+
+# struct for 3D vectors
+struct V3{T} <: FieldVector{3,T} 
+    x::T
+    y::T
+    z::T
+end
+
+# define + - for Vector{V3} and V3
+Base.:-(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = a .- Ref(b) # [ai - b for ai in a]
+Base.:-(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = Ref(a) .- b
+Base.:+(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = a .+ Ref(b)
+Base.:+(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = Ref(a) .+ b
+
+
 
 function path_length(x::Array)
     diff = x - circshift(x, 1)
@@ -13,7 +29,7 @@ function upresample(x, s)
     L = sum(norms)
     n_segments = Int(ceil(L/s))
     s_new = L/n_segments # update s
-    xnew = [[0.0, 0.0, 0.0] for _ in 1:n_segments]          
+    xnew = [V3(0.0, 0.0, 0.0) for _ in 1:n_segments]          
     # interpolate
     for i in 1:n_segments
         t = (i-1)*s_new
