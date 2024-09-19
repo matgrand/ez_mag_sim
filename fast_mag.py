@@ -15,7 +15,7 @@ def calc_mag_field(w:np.ndarray, I, grpts:np.ndarray): #calculate magnetic field
     return B
 
 # create a wire 
-angles = np.linspace(0, 2*np.pi, 10000)
+angles = np.linspace(0, 2*np.pi, 1000)
 w = np.array([np.cos(angles), np.sin(angles), np.ones_like(angles)]).T
 print(f'wire: {w.shape}')
 
