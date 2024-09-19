@@ -31,7 +31,7 @@ end;
 ##
 
 # test all the functions
-const N_GRID = 20
+const N_GRID = 53
 const GRID_RANGE = (-1.5,1.5)
 
 grpts = create_grid(GRID_RANGE,GRID_RANGE,GRID_RANGE, (N_GRID, N_GRID, N_GRID)) # grid points
@@ -61,12 +61,11 @@ wIs = [I1, I2]
 # display(plot!()) # display the plot
 # println("wires plotted")
 
-# _ = calc_mag_field(wpaths, wIs, grpts)
-# _ = calc_mag_field(wpaths, wIs, grpts)
-# _ = @code_warntype calc_mag_field(wpaths, wIs, grpts)
 
+# _ = @code_warntype calc_mag_field(wpaths, wIs, grpts)
 B = calc_mag_field(wpaths, wIs, grpts)
 @time B = calc_mag_field(wpaths, wIs, grpts)
+
 # println("B field calculated")
 
 # # calculate a vector of norms using list comprehension

@@ -2,6 +2,7 @@ using LinearAlgebra
 using ProgressMeter
 using InteractiveUtils
 using StaticArrays
+using BenchmarkTools
 
 struct V3{T} <: FieldVector{3,T} 
     x::T
@@ -10,26 +11,19 @@ struct V3{T} <: FieldVector{3,T}
 end
 
 # define + - for Vector{V3} and V3
-# Base.:-(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = a .- Ref(b) # [ai - b for ai in a]
-# Base.:-(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = Ref(a) .- b
-# Base.:+(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = a .+ Ref(b)
-# Base.:+(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = Ref(a) .+ b
-Base.:-(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = [ai - b for ai in a]
-Base.:-(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = [a - bi for bi in b]
-Base.:+(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = [ai + b for ai in a]
-Base.:+(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = [a + bi for bi in b]
+Base.:-(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = [a - b for a in a]
+Base.:-(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = [a - b for b in b]
+Base.:+(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = [a + b for a in a]
+Base.:+(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = [a + b for b in b]
 
 function calc_mag_field(w, I, grpts) 
-    B = [V3(0.,0.,0.) for _ in 1:size(grpts,1)] # B field
-    μ0 = 4π * 1e-7
-    ws = circshift(w, -1) # wire points
-    dl = ws - w # wire segment (m,3)
-    wm = (w + ws) / 2  # wire segment midpoint 
+    B = fill(V3(0.,0.,0.), length(grpts)) # B field
+    μ0 = 4π * 1e-7 # permeability of vacuum
+    dl = [w[(i%length(w))+1]-w[i] for i∈1:length(w)] # wire segment vectors
+    wm = [(w[(i%length(w))+1]+w[i])/2 for i∈1:length(w)] # wire segment midpoints
     for (ig, p) in enumerate(grpts) # loop over grid points
         r = p - wm # vector from wire segment midpoint to grid point (m,3)
-        rnorm = norm.(r) # distance from wire segment midpoint to grid point (m)
-        r̂ = r ./ rnorm # unit vector from wire segment midpoint to grid point (m,3)
-        B[ig] += μ0 * I * sum(cross.(dl, r̂) ./ rnorm.^2) / 4π # Biot-Savart law
+        B[ig] += μ0 * I * sum(@.(dl × r / norm(r)^3)) / 4π # Biot-Savart law
     end
     return B
 end
@@ -46,5 +40,7 @@ println("grid: $(size(grpts))")
 # B0 = @code_warntype calc_mag_field(w, 100.0, grpts) 
 
 # calculate the magnetic field
-B = calc_mag_field(w, 100.0, grpts)
+# B = @code_warntype calc_mag_field(w, 100.0, grpts[1:10])
+B = calc_mag_field(w, 100.0, grpts[1:10])
+
 @time B = calc_mag_field(w, 100.0, grpts)

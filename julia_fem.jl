@@ -23,7 +23,7 @@ function calc_mag_field(wpaths, wIs, grpts)
             r = p - wm # vector from wire segment midpoint to grid point (m,3)
             rnorm = norm.(r) # distance from wire segment midpoint to grid point (m)
             r̂ = r ./ rnorm # unit vector from wire segment midpoint to grid point (m,3)
-            B[ig] += μ0 * I * sum(cross.(dl, r̂) ./ rnorm.^2) / 4π # Biot-Savart law
+            B[ig] += μ0 * I * sum(dl .× r̂ ./ rnorm.^2) / 4π # Biot-Savart law
         end
     end
     return B

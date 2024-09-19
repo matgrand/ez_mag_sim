@@ -15,8 +15,6 @@ Base.:-(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = Ref(a) .- b
 Base.:+(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = a .+ Ref(b)
 Base.:+(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = Ref(a) .+ b
 
-
-
 function path_length(x::Array)
     diff = x - circshift(x, 1)
     norms = [norm(diff[i,:]) for i in axes(diff, 1)]
