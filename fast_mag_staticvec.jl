@@ -3,6 +3,9 @@ using ProgressMeter
 using InteractiveUtils
 using StaticArrays
 using BenchmarkTools
+using Printf
+Base.show(io::IO, f::Float64) = @printf(io, "%.4f", f) # show only 2 decimals
+
 
 include("utils.jl")
 
@@ -18,19 +21,27 @@ function calc_mag_field(w, I, grpts)
     return B
 end
 
+
 # create a wire
-angles = range(0.0, stop=2π, length=1000)
+M = 1000
+angles = range(0.0, stop=2π, length=M)
 w = [V3(cos(t), sin(t), 1.0) for t in angles]
 println("wire: $(size(w))")
 
 # create a grid
-grpts = [V3(rand(), rand(), rand()) for _ in 1:10000]
+N = 10000
+# grpts = [V3(rand(), rand(), rand()) for _ in 1:10000]
+grpts = [V3(i/N,i/N,i/N) for i in 1:N]
 println("grid: $(size(grpts))")
 
 # B0 = @code_warntype calc_mag_field(w, 100.0, grpts) 
 
 # calculate the magnetic field
 # B = @code_warntype calc_mag_field(w, 100.0, grpts[1:10])
-B = calc_mag_field(w, 100.0, grpts[1:10])
+B = calc_mag_field(w, 1_000_000.0, grpts[1:10])
 
-@time B = calc_mag_field(w, 100.0, grpts)
+@time B = calc_mag_field(w, 1_000_000.0, grpts)
+
+#print the 10 first grid points and the corresponding B field
+for i in 1:5 println("grid: $(grpts[i]) B: $(B[i])") end
+

@@ -186,6 +186,7 @@ if __name__ == '__main__':
 
     wpaths = [wp1, wp2]
     wIs = [wI1, wI2]
+    print(f'wIs: {wIs}')
 
     calcs = time()
     B = calc_mag_field(wpaths, wIs, grid) #create a magnetic field

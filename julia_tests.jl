@@ -5,7 +5,7 @@ using ProgressMeter
 using InteractiveUtils
 # plotlyjs()
 using Printf
-Base.show(io::IO, f::Float64) = @printf(io, "%.4f", f) # show only 2 decimals
+Base.show(io::IO, f::Float64) = @printf(io, "%.5f", f) # show only 2 decimals
 
 include("utils.jl")
 include("julia_fem.jl")
@@ -46,11 +46,12 @@ wp1 = create_horiz_circular_path(3, 2.0, -1.0)
 # plot!(wp2[:,1], wp2[:,2], wp2[:,3], label="wp2", line=(:blue, 3))
 # display(plot!()) # display the plot
 
-w2, I2 = create_wire(wp2, 40.0, 1.77e-8, 1e-4, 0.01)
 w1, I1 = create_wire(wp1, 50.0, 1.77e-8, 1e-4, 0.01)
+w2, I2 = create_wire(wp2, 40.0, 1.77e-8, 1e-4, 0.01)
 
 wpaths = [w1, w2]
 wIs = [I1, I2]
+println("wIs: $(wIs)")
 
 # # plot wires
 # plot() # create a plot

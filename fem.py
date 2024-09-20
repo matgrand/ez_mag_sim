@@ -27,7 +27,7 @@ def create_wire(wp, V=0.0, ρ=1.77e-8, s=1e-4, seg_len=5e-2): #create a wire, V:
     I = V/R # current I = V/R
     return wp, I
 
-# faster version of calc_mag_field
+# faster version of calc_mag_field but uses more memory
 # CHUNCK_SIZE = 1e4
 # def calc_mag_field(wpaths:list[ndarray], wIs:list[ndarray], gpoints:ndarray): #calculate magnetic field, wpaths: wire paths, wIs: wire currents, gpoints: gpoints points
 #     # calculate B field on a gpoints
@@ -62,7 +62,6 @@ def create_wire(wp, V=0.0, ρ=1.77e-8, s=1e-4, seg_len=5e-2): #create a wire, V:
 #     return B 
 
 def calc_mag_field(wpaths:list[ndarray], wIs:list[ndarray], gpoints:ndarray): #calculate magnetic field, wpaths: wire paths, wIs: wire currents, gpoints: grid points
-    # this is slower than calc, but uses less ram
     # calculate B field on a gpoints
     B = np.zeros_like(gpoints) #initialize B field (n,3)
     μ0 = 4*np.pi*1e-7 #vacuum permeability
@@ -74,5 +73,5 @@ def calc_mag_field(wpaths:list[ndarray], wIs:list[ndarray], gpoints:ndarray): #c
             r = p - wm  # r (m,3)
             rnorm = np.linalg.norm(r, axis=1).reshape(-1,1)  # |r| (m,1)
             r̂ = r / rnorm  # unit vector r (m,3)
-            B[i] += μ0 * I * np.sum(np.cross(dl, r̂) / rnorm**2, axis=0) / 4*np.pi # Biot-Savart law
+            B[i] += μ0 * I * np.sum(np.cross(dl, r̂) / rnorm**2, axis=0) / 4 / np.pi # Biot-Savart law
     return B
