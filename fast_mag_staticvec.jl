@@ -4,17 +4,7 @@ using InteractiveUtils
 using StaticArrays
 using BenchmarkTools
 
-struct V3{T} <: FieldVector{3,T} 
-    x::T
-    y::T
-    z::T
-end
-
-# define + - for Vector{V3} and V3
-Base.:-(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = [a - b for a in a]
-Base.:-(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = [a - b for b in b]
-Base.:+(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = [a + b for a in a]
-Base.:+(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = [a + b for b in b]
+include("utils.jl")
 
 function calc_mag_field(w, I, grpts) 
     B = fill(V3(0.,0.,0.), length(grpts)) # B field

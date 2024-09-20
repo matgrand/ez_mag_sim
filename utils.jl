@@ -2,18 +2,21 @@
 using LinearAlgebra
 using StaticArrays
 
-# struct for 3D vectors
-struct V3{T} <: FieldVector{3,T} 
+#struct for 3D vectors
+struct V3{T<:Number} <: FieldVector{3,T}
     x::T
     y::T
     z::T
 end
 
+#redefine the print function for V3
+Base.show(io::IO, v::V3) = print(io,"[$(v.x),$(v.y),$(v.z)]")
+
 # define + - for Vector{V3} and V3
-Base.:-(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = a .- Ref(b) # [ai - b for ai in a]
-Base.:-(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = Ref(a) .- b
-Base.:+(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = a .+ Ref(b)
-Base.:+(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = Ref(a) .+ b
+Base.:-(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = [a - b for a in a]
+Base.:-(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = [a - b for b in b]
+Base.:+(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = [a + b for a in a]
+Base.:+(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = [a + b for b in b]
 
 function path_length(x::Array)
     diff = x - circshift(x, 1)

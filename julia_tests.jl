@@ -31,7 +31,7 @@ end;
 ##
 
 # test all the functions
-const N_GRID = 53
+const N_GRID = 20
 const GRID_RANGE = (-1.5,1.5)
 
 grpts = create_grid(GRID_RANGE,GRID_RANGE,GRID_RANGE, (N_GRID, N_GRID, N_GRID)) # grid points
@@ -68,12 +68,12 @@ B = calc_mag_field(wpaths, wIs, grpts)
 
 # println("B field calculated")
 
-# # calculate a vector of norms using list comprehension
-# normB = [norm(B[i,:]) for i in axes(B, 1)]
-# #print normB line for line
-# for i in axes(normB, 1)[1:10]
-#     println("grid: $(grpts[i,:]) B: $(B[i,:]) normB: $(normB[i])")
-# end
+# calculate a vector of norms using list comprehension
+normB = [norm(B[i,:]) for i in axes(B, 1)]
+#print normB line for line
+for i in axes(normB, 1)[1:10]
+    println("grid: $(grpts[i]) B: $(B[i]) normB: $(normB[i])")
+end
 
 # plot() # create a plot
 # u, v, w = normB[:,1], normB[:,2], normB[:,3]

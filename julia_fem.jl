@@ -10,23 +10,21 @@ function create_wire(wp, V, ρ, section, seg_len)
     return wp, I
 end
 
-function calc_mag_field(wpaths, wIs, grpts) 
-    B = [V3(0.,0.,0.) for _ in 1:size(grpts,1)] # B field
-    μ0 = 4π * 1e-7
+function calc_mag_field(wpaths::Vector{Vector{V3{T}}}, wIs::Vector{T}, grpts::Vector{V3{T}}) where T
+    B = fill(V3(0.,0.,0.), length(grpts)) # B field
+    # foreach((w, I) -> calc_mag_field!(w, I, grpts, B), zip(wpaths, wIs))
     for (w, I) in zip(wpaths, wIs)
-        B = [V3(0.,0.,0.) for _ in 1:size(grpts,1)] # B field
-        μ0 = 4π * 1e-7
-        ws = circshift(w, -1) # wire points
-        dl = ws - w # wire segment (m,3)
-        wm = (w + ws) / 2  # wire segment midpoint 
-        for (ig, p) in enumerate(grpts) # loop over grid points
-            r = p - wm # vector from wire segment midpoint to grid point (m,3)
-            rnorm = norm.(r) # distance from wire segment midpoint to grid point (m)
-            r̂ = r ./ rnorm # unit vector from wire segment midpoint to grid point (m,3)
-            B[ig] += μ0 * I * sum(dl .× r̂ ./ rnorm.^2) / 4π # Biot-Savart law
-        end
+        calc_mag_field!(w, I, grpts, B)
     end
     return B
 end
 
-
+function calc_mag_field!(w::Vector{V3{T}}, I::T, grpts::Vector{V3{T}}, B::Vector{V3{T}}) where T
+    μ0 = 4π * 1e-7 # permeability of vacuum
+    dl = [w[(i%length(w))+1]-w[i] for i∈1:length(w)] # wire segment vectors
+    wm = [(w[(i%length(w))+1]+w[i])/2 for i∈1:length(w)] # wire segment midpoints
+    for (ig, p) in enumerate(grpts) # loop over grid points
+        r = p - wm # vector from wire segment midpoint to grid point (m,3)
+        B[ig] += μ0 * I * sum(@.(dl × r / norm(r)^3)) / 4π # Biot-Savart law
+    end
+end
