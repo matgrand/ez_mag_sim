@@ -1,13 +1,20 @@
 # functions for julia
 using LinearAlgebra
 using StaticArrays
+# using Plots
 
+#############################################################################################
+###### 3D vector stuff ######################################################################
+#############################################################################################
 #struct for 3D vectors
 struct V3{T<:Number} <: FieldVector{3,T}
     x::T
     y::T
     z::T
 end
+
+# empty constructor
+V3() = V3(0.0, 0.0, 0.0)
 
 #redefine the print function for V3
 Base.show(io::IO, v::V3) = print(io,"[$(v.x),$(v.y),$(v.z)]")
@@ -17,6 +24,19 @@ Base.:-(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = [a - b for a in a]
 Base.:-(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = [a - b for b in b]
 Base.:+(a::Vector{V3{T}}, b::V3{T}) where {T<:Number} = [a + b for a in a]
 Base.:+(a::V3{T}, b::Vector{V3{T}}) where {T<:Number} = [a + b for b in b]
+
+#############################################################################################
+## Random stuff #############################################################################
+#############################################################################################
+const MACSCREEN = (1728, 1050) # mac screen size for plotting
+
+#clear the console
+clc() = print("\033[2J\033[H") # clear the console
+# cl() = clc(); closeall() # clear the console and close all plots (if using Plots)
+
+#############################################################################################
+## Misc #####################################################################################
+#############################################################################################
 
 function path_length(x::Array)
     diff = x - circshift(x, 1)
@@ -49,10 +69,6 @@ function upresample(x, s)
     return xnew
 end
 
-# x = [2.0 0.0 -1.0; -0.9999999999999996 1.7320508075688774 -1.0; -1.0000000000000009 -1.732050807568877 -1.0; 2.0 -4.898587196589413e-16 -1.0]
-# upresample(x, 0.001);
-
-
 # 3D arrow plot
 # as: arrow head size 0-1 (fraction of arrow length)
 # la: arrow alpha transparency 0-1
@@ -70,3 +86,5 @@ function arrow3d!(x, y, z,  u, v, w; as=0.1, lc=:black, la=1, lw=0.4, scale=:ide
         plot!([x+u,x+u-v4[1]], [y+v,y+v-v4[2]], [z+w,z+w-v4[3]], lc=lc, la=la, lw=lw, label=false)
     end
 end
+
+;

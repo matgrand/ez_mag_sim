@@ -6,7 +6,7 @@ using Printf
 Base.show(io::IO, f::Float64) = @printf(io, "%.7f", f) # show only 2 decimals
 
 include("utils.jl")
-include("julia_fem.jl")
+include("mag_field.jl")
 
 function create_grid(xlim=(-1,1), ylim=(-1,1), zlim=(-1,1), n=(10,10,10))
     x = range(xlim[1], stop=xlim[2], length=n[1])
@@ -29,7 +29,7 @@ end;
 ##
 
 # test all the functions
-const N_GRID = 67
+const N_GRID = 13
 const GRID_LIM = (-3.5,3.5)
 
 grpts = create_grid(GRID_LIM,GRID_LIM,GRID_LIM, (N_GRID, N_GRID, N_GRID)) # grid points

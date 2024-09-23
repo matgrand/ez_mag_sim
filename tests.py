@@ -1,4 +1,4 @@
-from fem import create_wire, calc_mag_field
+from mag_field import create_wire, calc_mag_field
 from utils import create_grid, create_horiz_circular_path
 from time import time
 from tqdm import tqdm

@@ -11,7 +11,7 @@ function create_wire(wp, V, ρ, section, seg_len)
 end
 
 function calc_mag_field(wpaths::Vector{Vector{V3{T}}}, wIs::Vector{T}, grpts::Vector{V3{T}}) where T
-    B = fill(V3(0.,0.,0.), length(grpts)) # B field
+    B = fill(V3(), length(grpts)) # B field
     for (w, I) in zip(wpaths, wIs) calc_mag_field!(w, I, grpts, B) end
     return B
 end

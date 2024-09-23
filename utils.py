@@ -45,7 +45,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
     from tests import FIGSIZE
-    from fem import FemWire
+    from mag_field import FemWire
     tor_wires_paths = create_toroidal_coils_paths()
     tor_wires = [FemWire(path, V=50, seg_len=0.1) for path in tor_wires_paths]
 
