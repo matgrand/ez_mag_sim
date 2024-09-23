@@ -29,7 +29,7 @@ end;
 ##
 
 # test all the functions
-const N_GRID = 15
+const N_GRID = 67
 const GRID_LIM = (-3.5,3.5)
 
 grpts = create_grid(GRID_LIM,GRID_LIM,GRID_LIM, (N_GRID, N_GRID, N_GRID)) # grid points
