@@ -1,11 +1,9 @@
 # utils 
 using LinearAlgebra
-using Plots
 using ProgressMeter
 using InteractiveUtils
-# plotlyjs()
 using Printf
-Base.show(io::IO, f::Float64) = @printf(io, "%.5f", f) # show only 2 decimals
+Base.show(io::IO, f::Float64) = @printf(io, "%.7f", f) # show only 2 decimals
 
 include("utils.jl")
 include("julia_fem.jl")
@@ -31,14 +29,14 @@ end;
 ##
 
 # test all the functions
-const N_GRID = 20
-const GRID_RANGE = (-1.5,1.5)
+const N_GRID = 15
+const GRID_LIM = (-3.5,3.5)
 
-grpts = create_grid(GRID_RANGE,GRID_RANGE,GRID_RANGE, (N_GRID, N_GRID, N_GRID)) # grid points
+grpts = create_grid(GRID_LIM,GRID_LIM,GRID_LIM, (N_GRID, N_GRID, N_GRID)) # grid points
 println("grid points: $(size(grpts,1))")
 
-wp2 = create_horiz_circular_path(5, 2.0, 1.5)
 wp1 = create_horiz_circular_path(3, 2.0, -1.0)
+wp2 = create_horiz_circular_path(5, 2.0, 1.0)
 
 # # # plot wire paths
 # plot() # create a plot
@@ -51,7 +49,6 @@ w2, I2 = create_wire(wp2, 40.0, 1.77e-8, 1e-4, 0.01)
 
 wpaths = [w1, w2]
 wIs = [I1, I2]
-println("wIs: $(wIs)")
 
 # # plot wires
 # plot() # create a plot
@@ -72,27 +69,40 @@ B = calc_mag_field(wpaths, wIs, grpts)
 # calculate a vector of norms using list comprehension
 normB = [norm(B[i,:]) for i in axes(B, 1)]
 #print normB line for line
-for i in axes(normB, 1)[1:10]
+for i in axes(normB, 1)[1:5]
     println("grid: $(grpts[i]) B: $(B[i]) normB: $(normB[i])")
 end
 
-# plot() # create a plot
-# u, v, w = normB[:,1], normB[:,2], normB[:,3]
-# # quiver!(grpts[:,1], grpts[:,2], grpts[:,3], quiver=(u, v, w),color=:blues, colorbar_title="B", normalize=true)
-# arrow3d!(grpts[:,1], grpts[:,2], grpts[:,3], u, v, w, as=0.2, lc=:black, la=0.5, lw=2)
-# # plot wire paths
-# plot!(wp1[:,1], wp1[:,2], wp1[:,3], label="wp1", line=(:red, 3))
-# plot!(wp2[:,1], wp2[:,2], wp2[:,3], label="wp2", line=(:blue, 3))
-# display(plot!()) # display the plot
+x, y, z = [g[1] for g in grpts], [g[2] for g in grpts], [g[3] for g in grpts]
+B̂ = 0.2 .* B ./ normB
+u, v, w = [b[1] for b in B̂], [b[2] for b in B̂], [b[3] for b in B̂]
+x1, y1, z1 = [w[1] for w in w1], [w[2] for w in w1], [w[3] for w in w1]
+x2, y2, z2 = [w[1] for w in w2], [w[2] for w in w2], [w[3] for w in w2]
 
 
-# # plotting matplotlib
-# using PyPlot
-# fig = figure(figsize=(10,10))
-# ax = fig.add_subplot(111, projection="3d")
-# ax.quiver(grpts[:,1], grpts[:,2], grpts[:,3], B[:,1], B[:,2], B[:,3], length=0.1, normalize=true)
-# ax.plot(wp1[:,1], wp1[:,2], wp1[:,3], label="wp1", color="red")
-# ax.plot(wp2[:,1], wp2[:,2], wp2[:,3], label="wp2", color="blue")
-# legend()
-# show()
+using Plots
+# plotlyjs() # use the plotlyjs backend
+
+function draw_segments!(x,)
+    
+end
+
+#magnetic field plot
+plot(size=(1000, 1000)) # create a full screen plot
+quiver!(x, y, z, quiver=(u, v, w), color=:orange, colorbar_title="B", lw=2)
+# arrow3d!(x, y, z, u, v, w, as=0.2, lc=:black, la=0.5, lw=2)
+# plot wire paths
+plot!(x1, y1, z1, label="wp1", line=(:red, 3))
+plot!(x2, y2, z2, label="wp2", line=(:blue, 3))
+display(plot!()) # display the plot
+
+# 3d animation
+#animation
+const NPART = 50 #number of particles to plot, reduce for a faster animation
+const STEP_SIZE = 0.08 #step size for each iteration
+const N_ITER = 500 #number of iterations to animate 3000
+const FPS = 30.0 #frames per second
+const ANIM_SPEED = 2.5 #speed of animation (can also be used to speed up slow animations)
+const SKIP_FRAMES = 1 #skip frames to reduce animation size
+const SAVE_MP4 = false  # use saved pics to create mp4 video, for big animations
 

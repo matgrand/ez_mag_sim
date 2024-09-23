@@ -10,10 +10,10 @@ from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
 FIGSIZE = (10,10)
 # GRID_LIM = (-6,6)
-GRID_LIM = (-1.5,1.5)
+GRID_LIM = (-3.5,3.5)
 ARROW_LEN = 0.3
 #animation
-NPART = 50 #number of particles to plot, reduce for a faster animation
+NPART = 500 #number of particles to plot, reduce for a faster animation
 STEP_SIZE = 0.08 #step size for each iteration
 N_ITER = 500 #number of iterations to animate 3000
 FPS = 30.0 #frames per second
@@ -161,16 +161,16 @@ def test_magfield_animation():
 
 if __name__ == '__main__': 
     # ix, iy, iz = 10,10,10 #number of points in each dimension
-    ix, iy, iz = 20,20,20 #number of points in each dimension
+    # ix, iy, iz = 20,20,20 #number of points in each dimension
     # ix, iy, iz = 15,15,15 #number of points in each dimension
-    # ix, iy, iz = 37,37,37 #number of points in each dimension
+    ix, iy, iz = 37,37,37 #number of points in each dimension
     # ix, iy, iz = 53,53,53 #number of points in each dimension
     # ix, iy, iz = 3,3,3 #number of points in each dimension
     # ix, iy, iz = 80,80,80 #number of points in each dimension
     grid = create_grid(GRID_LIM, GRID_LIM, GRID_LIM, n=(ix,iy,iz)) #create a grid
     print(f'grid shape: {grid.shape}')
     wp1 = create_horiz_circular_path(n=3, r=2.0, z=-1.0) #create a wire path
-    wp2 = create_horiz_circular_path(n=5, r=2.0, z=1.5) #create a wire path
+    wp2 = create_horiz_circular_path(n=5, r=2.0, z=1) #create a wire path
     # wp3 = create_horiz_circular_path(n=6, r=2.0, z=-1.5) #create a wire path
     wp3 = np.array([[[1.3*np.sin(t)],[3],[1.3*np.cos(t)]] for t in np.linspace(0,2*np.pi,5+1)]).reshape((-1,3))
     wp4 = np.array([[[3],[1.5*np.sin(t)],[1.5*np.cos(t)]] for t in np.linspace(0,2*np.pi,7+1)]).reshape((-1,3))
@@ -181,12 +181,11 @@ if __name__ == '__main__':
     wp3, wI3 = create_wire(wp3, V=-40, seg_len=0.01) #create a wire
     wp4, wI4 = create_wire(wp4, V=-40, seg_len=0.01) #create a wire 
     
-    # wpaths = [wp1, wp2, wp3, wp4]
-    # wIs = [wI1, wI2, wI3, wI4]
+    wpaths = [wp1, wp2, wp3, wp4]
+    wIs = [wI1, wI2, wI3, wI4]
 
-    wpaths = [wp1, wp2]
-    wIs = [wI1, wI2]
-    print(f'wIs: {wIs}')
+    # wpaths = [wp1, wp2]
+    # wIs = [wI1, wI2]
 
     calcs = time()
     B = calc_mag_field(wpaths, wIs, grid) #create a magnetic field
@@ -197,15 +196,15 @@ if __name__ == '__main__':
     print(f'mean of mf norm: {np.mean(normB):.5f} T')
 
     #print normB line by line
-    for i in range(0, min(normB.shape[0], 10)):
-        print(f'grid: ({grid[i,0]:.2f},{grid[i,1]:.2f},{grid[i,2]:.2f}) normB[{i}]: {normB[i]:.5f}')
+    for i in range(0, min(normB.shape[0], 5)):
+        print(f'grid: ({grid[i,0]:.2f},{grid[i,1]:.2f},{grid[i,2]:.2f}) normB: {normB[i]:.5f}')
     # # TESTS
 
-    # f1 = test_magfield_plot()
+    f1 = test_magfield_plot()
 
-    # f2 = test_streamplot()
+    f2 = test_streamplot()
 
-    # f3 = test_magfield_animation()
+    f3 = test_magfield_animation()
 
     plt.show()
 
