@@ -24,6 +24,4 @@ function calc_mag_field!(w::Vector{V3{T}}, I::T, grpts::Vector{V3{T}}, B::Vector
         r = p - wm # vector from wire segment midpoint to grid point (m,3)
         B[ig] += μ0 * I * sum(@.(dl × r / norm(r)^3)) / 4π # Biot-Savart law
     end
-    # clear previous progress bar
-    print()
 end
