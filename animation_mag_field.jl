@@ -1,37 +1,27 @@
-using LinearAlgebra
 include("utils.jl")
 clc()
 include("mag_field.jl")
-using Printf
-Base.show(io::IO, f::Float64) = @printf(io, "%.2f", f) # show only x decimals
+using LinearAlgebra
 using Distributions
 using GeometryBasics
+using Printf
+using GLMakie
+Base.show(io::IO, f::Float64) = @printf(io, "%.2f", f) # show only x decimals
 
-const NG = 10 # nmber of grid points    
 const GL = 5.0 # grid limits
-
-# grid points
-grpts = [V3(i, j, k) for i in range(-GL,GL,NG) for j in range(-GL,GL,NG) for k in range(-GL,GL,NG)]
 
 # create wires
 w1, I1 = create_wire([V3(2*cos(t), 2*sin(t), -1) for t in range(0, stop=2π, length=4)], 50.0, 1.77e-8, 1e-4, 0.01)
 w2, I2 = create_wire([V3(2*cos(t), 2*sin(t), 1) for t in range(0, stop=2π, length=6)], 40.0, 1.77e-8, 1e-4, 0.01)
-w3, I3 = create_wire([V3(-2.3, 1.3*sin(t), 1.6*cos(t)) for t in range(0, stop=2π, length=5)], 40.0, 1.77e-8, 1e-4, 0.01)
-w4, I4 = create_wire([V3(1.8*sin(t), 2.4, 1.5*cos(t)) for t in range(0, stop=2π, length=9)], 40.0, 1.77e-8, 1e-4, 0.01)
-
+w3, I3 = create_wire([V3(1.3*sin(t), 3, 1.3*cos(t)) for t in range(0, stop=2π, length=5)], -40.0, 1.77e-8, 1e-4, 0.01)
+w4, I4 = create_wire([V3(3, 1.5*sin(t), 1.5*cos(t)) for t in range(0, stop=2π, length=9)], -40.0, 1.77e-8, 1e-4, 0.01)
 wires, currs = [w1, w2, w3, w4], [I1, I2, I3, I4]
 
-#calculate the magnetic field
-B = calc_mag_field(wires, currs, grpts)
-
-
-using GLMakie
-# create an animation of the magnetic field
-
 #create the animation first
-const NP = 200 # number of particles
+const NP = 50 # number of particles
 const NT = 1000 # number of time steps
 const STEP = 0.1 # step size
+const TAIL_LENGTH = 30
 
 function create_animation_vectors()
     pos = [V3(rand(Uniform(-GL,GL), 3)) for _ in 1:NP] # current positions
@@ -50,24 +40,9 @@ end
 
 all_pos, all_mfs = create_animation_vectors()
 
-
-
 # animation
 using Colors
 using DataStructures: CircularBuffer
-const TAIL_LENGTH = 30
-
-# # fig = Figure(size=(800,800), theme=theme_dark())
-# fig = Figure(size=(800,800))
-# ax = Axis3(fig[1,1], aspect = :equal)
-# ps, ms = Point3f.(all_pos[1]), Vec3d.(all_mfs[1])
-# ls = norm.(ms) # lengths
-# ms = 0.2 .* ms ./ ls # normalize
-
-# colors = distinguishable_colors(NP, colorant"blue")
-
-# arrows!(ax, ps, ms, color=colors, arrowsize=Vec3f(0.1, 0.1, 0.1))
-# fig
 
 # Initialize the points and magnetic field vectors
 SEG_LEN = 0.3
@@ -126,11 +101,11 @@ function update_plot(frame)
         obs_colors[i][] = [RGBA(colors[i].r, colors[i].g, colors[i].b, α) for α in tmp_α]
     end
     #update camera angle
-    cam_angle[] = sin(3 * 2π * frame / NT)
+    cam_angle[] = sin(2 * 2π * frame / NT)
 end
 for i in 1:NT # create live animation
     update_plot(i%NT+1)
     sleep(0.001)
 end
-#save mp4
-record(fig, "magnetic_field.mp4", 1:NT, framerate=60) do i update_plot(i%NT+1) end
+
+# record(fig, "magnetic_field.mp4", 1:NT, framerate=60) do i update_plot(i%NT+1) end # save mp4
