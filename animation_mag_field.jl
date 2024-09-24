@@ -54,7 +54,7 @@ ms = SEG_LEN .* ms ./ ls # normalize
 # create the animation
 fig = Figure(size=(800,800), theme=theme_black())
 title_mf = Observable("Magnetic Field 1/$(NT)") # title
-cam_angle = Observable(0.0) # camera angle
+cam_angle = Observable(5π/4) # camera angle
 ax = Axis3(fig[1,1], aspect = :equal, xlabel="x", ylabel="y", zlabel="z", title=title_mf, azimuth=cam_angle)
 limits!(ax, -GL, GL, -GL, GL, -GL, GL)
 #fading colors
@@ -101,7 +101,7 @@ function update_plot(frame)
         obs_colors[i][] = [RGBA(colors[i].r, colors[i].g, colors[i].b, α) for α in tmp_α]
     end
     #update camera angle
-    cam_angle[] = sin(2 * 2π * frame / NT)
+    cam_angle[] = 0.5 * sin(2 * 2π * frame / NT ) + 5π/4
 end
 for i in 1:NT # create live animation
     update_plot(i%NT+1)
