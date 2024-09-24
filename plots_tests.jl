@@ -133,6 +133,4 @@ for i in 1:NT # create live animation
     sleep(0.001)
 end
 #save mp4
-record(fig, "magnetic_field.mp4", 1:NT, framerate=60) do i
-    update_plot(i%NT+1)
-end
+record(fig, "magnetic_field.mp4", 1:NT, framerate=60) do i update_plot(i%NT+1) end
