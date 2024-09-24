@@ -8,7 +8,7 @@ using Printf
 using GLMakie
 Base.show(io::IO, f::Float64) = @printf(io, "%.2f", f) # show only x decimals
 
-const GL = 5.0 # grid limits
+const GL = 6.0 # grid limits
 
 # create wires
 w1, I1 = create_wire([V3(2*cos(t), 2*sin(t), -1) for t in range(0, stop=2π, length=4)], 50.0, 1.77e-8, 1e-4, 0.01)
@@ -18,8 +18,8 @@ w4, I4 = create_wire([V3(3, 1.5*sin(t), 1.5*cos(t)) for t in range(0, stop=2π, 
 wires, currs = [w1, w2, w3, w4], [I1, I2, I3, I4]
 
 #create the animation first
-const NP = 50 # number of particles
-const NT = 1000 # number of time steps
+const NP = 400 # number of particles
+const NT = 3000 # number of time steps
 const STEP = 0.1 # step size
 const TAIL_LENGTH = 30
 
@@ -44,14 +44,6 @@ all_pos, all_mfs = create_animation_vectors()
 using Colors
 using DataStructures: CircularBuffer
 
-# Initialize the points and magnetic field vectors
-SEG_LEN = 0.3
-ps = Point3f.(all_pos[1])
-ms = Vec3f.(all_mfs[1])
-ls = norm.(ms) # lengths
-ms = SEG_LEN .* ms ./ ls # normalize
-
-# create the animation
 fig = Figure(size=(800,800), theme=theme_black())
 title_mf = Observable("Magnetic Field 1/$(NT)") # title
 cam_angle = Observable(5π/4) # camera angle
@@ -63,12 +55,6 @@ colors = distinguishable_colors(NP)
 fading_colors = [[RGBA(c.r, c.g, c.b, α) for α in αs] for c in colors]
 obs_colors = [Observable(c) for c in fading_colors]
 
-p1s, p2s = copy(ps), ps + ms
-#create a single vector taking an element from p1s and p2s one after the other [p1s[1], p2s[1], p1s[2], p2s[2], ...]
-segments = Iterators.flatmap((p1, p2) -> [p1, p2], p1s, p2s) |> collect
-segments = Observable(segments) # make it observable
-println("p1s: $(typeof(p1s)), p2s: $(typeof(p2s))")
-println("segments: $(typeof(segments))")
 for w in wires lines!(Point3f.(w), color=RGB(1-0.2*rand(), 1-0.2*rand(), 1-0.2*rand()), linewidth=3, transparency=true) end
 
 # tails for the particles
@@ -82,11 +68,6 @@ display(fig)
 # Function to update the plot
 function update_plot(frame)
     ps = Point3f.(all_pos[frame])
-    ms = Vec3f.(all_mfs[frame])
-    ls = norm.(ms) # lengths
-    ms = SEG_LEN .* ms ./ ls # normalize
-    p1s, p2s = copy(ps), ps + ms
-    segments[] = Iterators.flatmap((p1, p2) -> [p1, p2], p1s, p2s) |> collect
     title_mf[] = "Magnetic Field $(frame)/$(NT)"
     #update tails
     for (i, tail) in enumerate(tails)
@@ -108,4 +89,6 @@ for i in 1:NT # create live animation
     sleep(0.001)
 end
 
-# record(fig, "magnetic_field.mp4", 1:NT, framerate=60) do i update_plot(i%NT+1) end # save mp4
+# record(fig, "magnetic_field.mp4", 1:NT, framerate=60) do i 
+#     update_plot(i%NT+1) 
+# end # save mp4
