@@ -30,7 +30,7 @@ using GLMakie
 
 #create the animation first
 const NP = 200 # number of particles
-const NT = 3500 # number of time steps
+const NT = 1000 # number of time steps
 const STEP = 0.1 # step size
 
 function create_animation_vectors()
@@ -77,7 +77,7 @@ ls = norm.(ms) # lengths
 ms = SEG_LEN .* ms ./ ls # normalize
 
 # create the animation
-fig = Figure(size=(800,800), theme=theme_dark())
+fig = Figure(size=(800,800), theme=theme_black())
 title_mf = Observable("Magnetic Field 1/$(NT)") # title
 cam_angle = Observable(0.0) # camera angle
 ax = Axis3(fig[1,1], aspect = :equal, xlabel="x", ylabel="y", zlabel="z", title=title_mf, azimuth=cam_angle)
@@ -128,7 +128,7 @@ function update_plot(frame)
     #update camera angle
     cam_angle[] = sin(3 * 2π * frame / NT)
 end
-for i in 1:NT
+for i in 1:NT # create live animation
     update_plot(i%NT+1)
     sleep(0.001)
 end
