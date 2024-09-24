@@ -44,7 +44,7 @@ all_pos, all_mfs = create_animation_vectors()
 using Colors
 using DataStructures: CircularBuffer
 
-fig = Figure(size=(800,800), theme=theme_black())
+fig = Figure(size=(1000,1000), theme=theme_black())
 title_mf = Observable("Magnetic Field 1/$(NT)") # title
 cam_angle = Observable(5π/4) # camera angle
 ax = Axis3(fig[1,1], aspect = :equal, xlabel="x", ylabel="y", zlabel="z", title=title_mf, azimuth=cam_angle)
