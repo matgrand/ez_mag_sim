@@ -29,8 +29,8 @@ using GLMakie
 # create an animation of the magnetic field
 
 #create the animation first
-const NP = 5 # number of particles
-const NT = 300 # number of time steps
+const NP = 200 # number of particles
+const NT = 3500 # number of time steps
 const STEP = 0.1 # step size
 
 function create_animation_vectors()
@@ -49,14 +49,13 @@ function create_animation_vectors()
 end
 
 all_pos, all_mfs = create_animation_vectors()
-# println("all_pos: $all_pos, \n\nall_mfs: $all_mfs")
-# println("all_pos: $(typeof(all_pos)), all_mfs: $(typeof(all_mfs))")
+
 
 
 # animation
 using Colors
 using DataStructures: CircularBuffer
-const TAIL_LENGTH = 150
+const TAIL_LENGTH = 30
 
 # # fig = Figure(size=(800,800), theme=theme_dark())
 # fig = Figure(size=(800,800))
@@ -78,9 +77,10 @@ ls = norm.(ms) # lengths
 ms = SEG_LEN .* ms ./ ls # normalize
 
 # create the animation
-fig = Figure(size=(800,800))
+fig = Figure(size=(800,800), theme=theme_dark())
 title_mf = Observable("Magnetic Field 1/$(NT)") # title
-ax = Axis3(fig[1,1], aspect = :equal, xlabel="x", ylabel="y", zlabel="z", title=title_mf)
+cam_angle = Observable(0.0) # camera angle
+ax = Axis3(fig[1,1], aspect = :equal, xlabel="x", ylabel="y", zlabel="z", title=title_mf, azimuth=cam_angle)
 limits!(ax, -GL, GL, -GL, GL, -GL, GL)
 #fading colors
 colors = distinguishable_colors(NP)
@@ -94,37 +94,18 @@ segments = Iterators.flatmap((p1, p2) -> [p1, p2], p1s, p2s) |> collect
 segments = Observable(segments) # make it observable
 println("p1s: $(typeof(p1s)), p2s: $(typeof(p2s))")
 println("segments: $(typeof(segments))")
-# linesegments!(ax, segments, color=colors1, transparency=true)
-for w in wires lines!(Point3f.(w), color=:black, linewidth=3) end # plot the wires
+for w in wires lines!(Point3f.(w), color=RGB(1-0.2*rand(), 1-0.2*rand(), 1-0.2*rand()), linewidth=3, transparency=true) end
 
 # tails for the particles
 tails = [CircularBuffer{Point3f}(TAIL_LENGTH) for _ in 1:NP]
 tails = [Observable(t) for t in tails]
-for (i, tail) in enumerate(tails)
-    tail_pts = Point3f.([all_pos[a][i] for a in 1:TAIL_LENGTH])
-    for p in tail_pts push!(tail[], p) end
-end   
-println("tails: $(typeof(tails))")
-for (i, tail) in enumerate(tails) 
-    # put transparency very low to the "jumps" in the tail so they are not visible
-    jumps = norm.(diff(tail[]))/STEP; pushfirst!(jumps, 0.0) # calculate the jumps
-    tmp_α = copy(αs);
-    # tmp_α[jumps .> 1.2] .= 0.0 # set the elements of αs to 0.0 where jumps > 1.2
-    for j in 1:TAIL_LENGTH
-        if jumps[j] > 1.01
-            tmp_α[j] = 0.0 
-            if j > 1 tmp_α[j-1] = 0.0 
-            elseif j < TAIL_LENGTH tmp_α[j+1] = 0.0 end
-        end
-    end
-    obs_colors[i][] = [RGBA(colors[i].r, colors[i].g, colors[i].b, α) for α in tmp_α]
-    lines!(ax, tail, linewidth=2, color=obs_colors[i])
-end
+for (i, tail) in enumerate(tails) fill!(tail[], Point3f(all_pos[1][i])) end   # initialize the tails
+for (i, tail) in enumerate(tails) lines!(ax, tail, linewidth=1, color=obs_colors[i]) end # plot the tails
 
 display(fig)
 
-# Function to update the arrows
-function update_arrows!(frame)
+# Function to update the plot
+function update_plot(frame)
     ps = Point3f.(all_pos[frame])
     ms = Vec3f.(all_mfs[frame])
     ls = norm.(ms) # lengths
@@ -132,18 +113,26 @@ function update_arrows!(frame)
     p1s, p2s = copy(ps), ps + ms
     segments[] = Iterators.flatmap((p1, p2) -> [p1, p2], p1s, p2s) |> collect
     title_mf[] = "Magnetic Field $(frame)/$(NT)"
-
     #update tails
     for (i, tail) in enumerate(tails)
         push!(tail[], ps[i])
         tail[] = tail[]
     end
+    #filter out new particles "zapping" across the 3d space
+    for (i, tail) in enumerate(tails) 
+        zaps = norm.(diff(tail[]))/STEP; push!(zaps, 0.0) # calculate the zaps
+        tmp_α = copy(αs);
+        for j in 1:TAIL_LENGTH if zaps[j] > 1.2 tmp_α[j:min(j+2, TAIL_LENGTH)] .= 0.0 end end
+        obs_colors[i][] = [RGBA(colors[i].r, colors[i].g, colors[i].b, α) for α in tmp_α]
+    end
+    #update camera angle
+    cam_angle[] = sin(3 * 2π * frame / NT)
 end
-
-for i in 1:2*NT
-    update_arrows!(i%NT+1)
-    sleep(0.02)
+for i in 1:NT
+    update_plot(i%NT+1)
+    sleep(0.001)
 end
-
-
-
+#save mp4
+record(fig, "magnetic_field.mp4", 1:NT, framerate=60) do i
+    update_plot(i%NT+1)
+end
