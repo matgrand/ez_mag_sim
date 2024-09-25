@@ -18,8 +18,8 @@ w4, I4 = create_wire([V3(3, 1.5*sin(t), 1.5*cos(t)) for t in range(0, stop=2π, 
 wires, currs = [w1, w2, w3, w4], [I1, I2, I3, I4]
 
 #create the animation first
-const NP = 400 # number of particles
-const NT = 2500 # number of time steps
+const NP = 100 # number of particles
+const NT = 500 # number of time steps
 const STEP = 0.1 # step size
 const TL = 30 # tail length
 
@@ -27,21 +27,27 @@ function create_animation_vectors()
     pos = [V3(rand(Uniform(-GL,GL), 3)) for _ in 1:NP] # current positions
     all_pos = fill(fill(V3(0.0, 0.0, 0.0), NP), NT) # all positions
     all_mfs = fill(fill(V3(0.0, 0.0, 0.0), NP), NT) # all magnetic fields
+    all_norms = fill(fill(0.0, NP), NT) # all magnetic field norms
     @showprogress for t in 1:NT
         mf = calc_mag_field(wires, currs, pos) # magnetic field at current positions
         all_pos[t] = pos # save positions
         all_mfs[t] = mf # save magnetic fields
-        pos += STEP .* normalize.(mf) # update positions
+        nmf = norm.(mf) # magnetic field norms
+        all_norms[t] = nmf # save magnetic field norms
+        pos += STEP .* mf ./ nmf # update positions
         #remove posiitions outside the grid and replace them with random positions
         pos = [any(p .< -GL) || any(p .> GL) ? V3(rand(Uniform(-GL,GL), 3)) : p for p in pos]
     end
-    return all_pos, all_mfs
+    return all_pos, all_mfs, all_norms
 end
 
-all_pos, all_mfs = create_animation_vectors()
-max_mf = mean(maximum.([norm.(mf) for mf in all_mfs])) # max magnetic field
-min_mf = mean(minimum.([norm.(mf) for mf in all_mfs])) # min magnetic field
-println("max_mf: $max_mf, min_mf: $min_mf")
+all_pos, all_mfs, all_norms = create_animation_vectors()
+max_mf = mean(maximum.([all_norms[t] for t in 1:NT]))
+min_mf = mean(minimum.([all_norms[t] for t in 1:NT]))
+println("max_mf: $(max_mf*1000), min_mf: $(min_mf*1000)")
+
+all_norms = [0. .+ (nt .- min_mf) ./ ((max_mf - min_mf)) for nt in all_norms] # map to [0,1]
+all_cmap = [cgrad.(:inferno, scale=:exp)[all_norms[i]] for i in 1:NT] # color map
 
 # animation
 using Colors
@@ -57,13 +63,12 @@ colors = distinguishable_colors(NP)
 fading_colors = [[RGBA(c.r, c.g, c.b, α) for α in αs] for c in colors]
 obs_colors = [Observable(c) for c in fading_colors]
 
-
 # tails for the particles
-tails = [CircularBuffer{Point3f}(TL) for _ in 1:NP]
-tails_norms = [CircularBuffer{Float64}(TL) for _ in 1:NP]
+tails = [CircularBuffer{Point3f}(TL) for _ in 1:NP] # tails
+tailsc = [CircularBuffer{RGBA}(TL) for _ in 1:NP] # tail colors
 tails = [Observable(t) for t in tails]
 for (i, tail) in enumerate(tails) fill!(tail[], Point3f(all_pos[1][i])) end   # initialize the tails
-for (i, tn) in enumerate(tails_norms) fill!(tn, (norm(all_mfs[1][i])-min_mf)/(max_mf-min_mf)) end # initialize the tail norms
+for (i, tn) in enumerate(tailsc) fill!(tn, all_cmap[1][i]) end # initialize the tail norms
 
 # plot 
 for w in wires lines!(Point3f.(w), color=RGB(1-0.2*rand(), 1-0.2*rand(), 1-0.2*rand()), linewidth=3, transparency=true) end # plot the wires
@@ -73,10 +78,8 @@ display(fig)
 # Function to update the plot
 function update_plot(frame)
     ps = Point3f.(all_pos[frame]) # current positions
-    norms = norm.(all_mfs[frame]) # current magnetic field norms
-    norms = [0.5 .+ (nt .- min_mf) ./ ((max_mf - min_mf)) for nt in norms] # map to [0,1]
     # println(norms)
-    for i in 1:NP push!(tails_norms[i], norms[i]) end
+    for i in 1:NP push!(tailsc[i], all_cmap[frame][i]) end
 
     title_mf[] = "Magnetic Field $(frame)/$(NT)"
     #update tails
@@ -90,8 +93,7 @@ function update_plot(frame)
         tmp_α = copy(αs);
         for j in 1:TL if zaps[j] > 1.2 tmp_α[j:min(j+2, TL)] .= 0.0 end end
         k = 0.5 # mixing color factor
-        cm = [cgrad(:inferno)[tails_norms[i][j]] for j in 1:TL] # color map
-        obs_colors[i][] = [RGBA(colors[i].r*k+cm[j].r*(1-k), colors[i].g*k+cm[j].g*(1-k), colors[i].b*k+cm[j].b*(1-k), tmp_α[j]) for j in 1:TL] 
+        obs_colors[i][] = [RGBA(colors[i].r*k+tailsc[i][j].r*(1-k), colors[i].g*k+tailsc[i][j].g*(1-k), colors[i].b*k+tailsc[i][j].b*(1-k), tmp_α[j]) for j in 1:TL] 
     end
     #update camera angle
     ax.azimuth[] = 0.5 * sin(2 * 2π * frame / NT ) + 5π/4
@@ -102,4 +104,4 @@ for i in 1:NT # create live animation
     sleep(0.001)
 end
 
-record(fig, "magnetic_field.mp4", 1:NT, framerate=60) do i update_plot(i%NT+1) end # save mp4
+# record(fig, "magnetic_field.mp4", 1:NT, framerate=60) do i update_plot(i%NT+1) end # save mp4
