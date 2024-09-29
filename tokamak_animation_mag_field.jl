@@ -28,11 +28,11 @@ Npf = 10 # number of coils
 αs = [2π/Npf * i for i in 1:Npf] # angles
 ts = range(0, stop=2π, length=round(Int, 2π*(rₜ+δpf)*ρₛ)) # toroidal angles
 z = [sin(t)*(rₜ+δpf) for t in ts] # heights
-x = [[cos(α)*(Rₜ+δpf) + (rₜ+δpf)*cos(t) for t in ts] for α in αs] # radii
-y = [[sin(α)*(Rₜ+δpf) + (rₜ+δpf)*sin(t) for t in ts] for α in αs] # radii
-Wpf = [[V3(y[i][j], x[i][j], z[i]) for j in 1:length(ts)] for i in 1:Npf]
+x = [[cos(α)*(Rₜ + rₜ*cos(t)) for t in ts] for α in αs] # radii
+y = [[sin(α)*(Rₜ + rₜ*cos(t)) for t in ts] for α in αs] # radii
+Wpf = [[V3(y[i][j], x[i][j], z[j]) for j in 1:length(ts)] for i in 1:Npf]
 
-wires = Wpf
+wires = vcat(Wtf, Wpf)
 currs = fill(100.0, length(Ws))
 
 # create wires
